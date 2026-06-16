@@ -1,4 +1,4 @@
-export function getLiterDm3State(pourProgress) {
+export function getLiterDm3State(pourProgress, activelyPouring = false) {
   const progress = Math.min(1, Math.max(0, Number(pourProgress) || 0));
   const rounded = Math.round(progress * 100) / 100;
 
@@ -6,10 +6,27 @@ export function getLiterDm3State(pourProgress) {
     progress,
     cupLevel: Math.round((1 - progress) * 100) / 100,
     cubeLevel: rounded,
-    streamVisible: progress > 0.05 && progress < 0.95,
+    streamVisible: progress > 0 && progress < 1 && (activelyPouring || progress > 0.05),
     equivalence: `${formatLiters(rounded)} L = ${formatLiters(rounded)} dm3`,
     conclusionVisible: progress >= 1
   };
+}
+
+export function getCupWorldPositionFromPointer(pointer, bounds) {
+  const width = Math.max(1, bounds.width);
+  const height = Math.max(1, bounds.height);
+  const xRatio = Math.min(1, Math.max(0, (pointer.clientX - bounds.left) / width));
+  const yRatio = Math.min(1, Math.max(0, (pointer.clientY - bounds.top) / height));
+
+  return {
+    x: -2.15 + xRatio * 4.3,
+    y: 0.5 + (1 - yRatio) * 1.75,
+    z: 0
+  };
+}
+
+export function isCupAboveCube(position) {
+  return position.x > -1.85 && position.x < -0.1 && position.y > 1.25;
 }
 
 export function mountLiterDm3Scene({ root, THREE, gsap }) {
@@ -23,6 +40,7 @@ export function mountLiterDm3Scene({ root, THREE, gsap }) {
   const startButton = root.querySelector('[data-liter-action="start"]');
   const resetButton = root.querySelector('[data-liter-action="reset"]');
   const pauseButton = root.querySelector('[data-liter-action="pause"]');
+  const focusButton = root.querySelector('[data-liter-action="focus"]');
 
   const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
   const scene = new THREE.Scene();
@@ -30,6 +48,11 @@ export function mountLiterDm3Scene({ root, THREE, gsap }) {
   const progress = { value: 0 };
   let animationFrame = 0;
   let disposed = false;
+  let dragging = false;
+  let activelyPouring = false;
+  let autoPouring = false;
+  let paused = false;
+  let lastTick = performance.now();
 
   camera.position.set(4.4, 3.2, 5.2);
   camera.lookAt(0, 0.6, 0);
@@ -92,11 +115,11 @@ export function mountLiterDm3Scene({ root, THREE, gsap }) {
   const cupWall = new THREE.Mesh(
     new THREE.CylinderGeometry(0.52, 0.45, 1.75, 48, 1, true),
     new THREE.MeshPhysicalMaterial({
-      color: 0xd8f7ff,
+      color: 0xf4fdff,
       transparent: true,
-      opacity: 0.25,
-      roughness: 0.04,
-      transmission: 0.5,
+      opacity: 0.18,
+      roughness: 0.02,
+      transmission: 0.78,
       thickness: 0.18
     })
   );
@@ -110,12 +133,19 @@ export function mountLiterDm3Scene({ root, THREE, gsap }) {
   cupRim.rotation.x = Math.PI / 2;
   cupGroup.add(cupRim);
 
+  const cupBottom = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.45, 0.45, 0.04, 48),
+    new THREE.MeshBasicMaterial({ color: 0xd8f7ff, transparent: true, opacity: 0.32 })
+  );
+  cupBottom.position.y = -0.88;
+  cupGroup.add(cupBottom);
+
   const cupWater = new THREE.Mesh(
     new THREE.CylinderGeometry(0.47, 0.4, 1.62, 48),
     new THREE.MeshPhysicalMaterial({
       color: 0x2f9fbe,
       transparent: true,
-      opacity: 0.62,
+      opacity: 0.68,
       roughness: 0.08
     })
   );
@@ -130,8 +160,6 @@ export function mountLiterDm3Scene({ root, THREE, gsap }) {
   spout.rotation.z = Math.PI / 2;
   cupGroup.add(spout);
 
-  addCupTicks(cupGroup, THREE);
-
   const stream = new THREE.Mesh(
     new THREE.CylinderGeometry(0.035, 0.05, 1.65, 16),
     new THREE.MeshBasicMaterial({ color: 0x2f9fbe, transparent: true, opacity: 0.72 })
@@ -141,15 +169,10 @@ export function mountLiterDm3Scene({ root, THREE, gsap }) {
   stream.visible = false;
   scene.add(stream);
 
-  const timeline = gsap.timeline({ paused: true });
-  timeline
-    .to(cupGroup.position, { x: 0.68, y: 1.72, duration: 0.9, ease: 'power2.inOut' }, 0)
-    .to(cupGroup.rotation, { z: 0.98, duration: 0.95, ease: 'power2.inOut' }, 0.65)
-    .to(progress, { value: 1, duration: 2.2, ease: 'none', onUpdate: updateScene }, 1)
-    .to(cupGroup.rotation, { z: 0.98, duration: 0.35 }, 3.1);
+  const autoTween = { move: null };
 
   function updateScene() {
-    const state = getLiterDm3State(progress.value);
+    const state = getLiterDm3State(progress.value, activelyPouring);
 
     cubeWater.scale.y = Math.max(0.001, state.cubeLevel);
     cubeWater.position.y = -0.75 + (1.5 * state.cubeLevel) / 2;
@@ -158,6 +181,9 @@ export function mountLiterDm3Scene({ root, THREE, gsap }) {
     cupWater.position.y = -0.83 + (1.62 * state.cupLevel) / 2;
 
     stream.visible = state.streamVisible;
+    stream.position.x = (cupGroup.position.x - 1.05) / 2;
+    stream.position.y = (cupGroup.position.y + 0.72) / 2;
+    stream.scale.y = Math.max(0.25, Math.min(1.1, cupGroup.position.y - 0.55));
     if (progressFill) progressFill.style.width = `${state.progress * 100}%`;
     if (statusLabel) statusLabel.textContent = state.equivalence;
     if (conclusion) conclusion.hidden = !state.conclusionVisible;
@@ -175,18 +201,53 @@ export function mountLiterDm3Scene({ root, THREE, gsap }) {
 
   function tick() {
     if (disposed) return;
+    const now = performance.now();
+    const deltaSeconds = Math.min(0.05, (now - lastTick) / 1000);
+    lastTick = now;
+
     cubeGroup.rotation.y = Math.sin(Date.now() * 0.00045) * 0.05;
+    const overCube = isCupAboveCube(cupGroup.position);
+    activelyPouring = !paused && (dragging || autoPouring) && overCube && progress.value < 1;
+
+    const targetTilt = activelyPouring ? 1.08 : 0;
+    cupGroup.rotation.z += (targetTilt - cupGroup.rotation.z) * 0.14;
+
+    if (activelyPouring) {
+      progress.value = Math.min(1, progress.value + deltaSeconds * 0.28);
+      if (progress.value >= 1) {
+        autoPouring = false;
+        activelyPouring = false;
+        if (pauseButton) pauseButton.textContent = 'Pauze';
+      }
+    }
+
+    updateScene();
     renderer.render(scene, camera);
     animationFrame = requestAnimationFrame(tick);
   }
 
   function startPour() {
-    timeline.restart();
+    paused = false;
+    autoPouring = true;
+    dragging = false;
+    if (progress.value >= 1) progress.value = 0;
+    autoTween.move?.kill?.();
+    autoTween.move = gsap.to(cupGroup.position, {
+      x: -0.72,
+      y: 1.78,
+      z: 0,
+      duration: 0.8,
+      ease: 'power2.inOut'
+    });
     if (pauseButton) pauseButton.textContent = 'Pauze';
   }
 
   function resetPour() {
-    timeline.pause(0);
+    autoTween.move?.kill?.();
+    autoPouring = false;
+    dragging = false;
+    activelyPouring = false;
+    paused = false;
     progress.value = 0;
     cupGroup.position.set(1.55, 0.85, 0);
     cupGroup.rotation.set(0, 0, 0);
@@ -195,18 +256,83 @@ export function mountLiterDm3Scene({ root, THREE, gsap }) {
   }
 
   function togglePause() {
-    if (timeline.paused()) {
-      timeline.play();
-      if (pauseButton) pauseButton.textContent = 'Pauze';
-    } else {
-      timeline.pause();
+    paused = !paused;
+    if (paused) {
+      autoTween.move?.pause?.();
       if (pauseButton) pauseButton.textContent = 'Verder';
+    } else {
+      autoTween.move?.resume?.();
+      if (pauseButton) pauseButton.textContent = 'Pauze';
     }
+  }
+
+  function onPointerDown(event) {
+    if (event.target.closest('button')) return;
+    event.preventDefault();
+    autoTween.move?.kill?.();
+    autoPouring = false;
+    paused = false;
+    dragging = true;
+    sceneRoot.classList.add('is-dragging');
+    sceneRoot.setPointerCapture?.(event.pointerId);
+    moveCupToPointer(event);
+    if (pauseButton) pauseButton.textContent = 'Pauze';
+  }
+
+  function onPointerMove(event) {
+    if (!dragging) return;
+    event.preventDefault();
+    moveCupToPointer(event);
+  }
+
+  function onPointerUp(event) {
+    if (!dragging) return;
+    dragging = false;
+    activelyPouring = false;
+    sceneRoot.classList.remove('is-dragging');
+    sceneRoot.releasePointerCapture?.(event.pointerId);
+  }
+
+  function moveCupToPointer(event) {
+    const position = getCupWorldPositionFromPointer(event, sceneRoot.getBoundingClientRect());
+    cupGroup.position.set(position.x, position.y, position.z);
+  }
+
+  function toggleFocus() {
+    const isFocused = root.classList.toggle('is-scene-focus');
+    sceneRoot.classList.toggle('is-scene-focus-target', isFocused);
+    if (focusButton) {
+      focusButton.textContent = isFocused ? 'Minimaliseren' : 'Fullscreen';
+      focusButton.setAttribute(
+        'aria-label',
+        isFocused ? 'Minimaliseer de animatie' : 'Toon de animatie fullscreen'
+      );
+    }
+    if (isFocused) sceneRoot.requestFullscreen?.().catch?.(() => {});
+    else if (document.fullscreenElement === sceneRoot) document.exitFullscreen?.();
+    requestAnimationFrame(resize);
+  }
+
+  function onFullscreenChange() {
+    if (document.fullscreenElement === sceneRoot) return;
+    root.classList.remove('is-scene-focus');
+    sceneRoot.classList.remove('is-scene-focus-target');
+    if (focusButton) {
+      focusButton.textContent = 'Fullscreen';
+      focusButton.setAttribute('aria-label', 'Toon de animatie fullscreen');
+    }
+    requestAnimationFrame(resize);
   }
 
   startButton?.addEventListener('click', startPour);
   resetButton?.addEventListener('click', resetPour);
   pauseButton?.addEventListener('click', togglePause);
+  focusButton?.addEventListener('click', toggleFocus);
+  sceneRoot.addEventListener('pointerdown', onPointerDown);
+  sceneRoot.addEventListener('pointermove', onPointerMove);
+  sceneRoot.addEventListener('pointerup', onPointerUp);
+  sceneRoot.addEventListener('pointercancel', onPointerUp);
+  document.addEventListener('fullscreenchange', onFullscreenChange);
   window.addEventListener('resize', resize);
 
   resize();
@@ -217,10 +343,17 @@ export function mountLiterDm3Scene({ root, THREE, gsap }) {
     destroy() {
       disposed = true;
       cancelAnimationFrame(animationFrame);
-      timeline.kill();
+      autoTween.move?.kill?.();
+      if (document.fullscreenElement === sceneRoot) document.exitFullscreen?.();
       startButton?.removeEventListener('click', startPour);
       resetButton?.removeEventListener('click', resetPour);
       pauseButton?.removeEventListener('click', togglePause);
+      focusButton?.removeEventListener('click', toggleFocus);
+      sceneRoot.removeEventListener('pointerdown', onPointerDown);
+      sceneRoot.removeEventListener('pointermove', onPointerMove);
+      sceneRoot.removeEventListener('pointerup', onPointerUp);
+      sceneRoot.removeEventListener('pointercancel', onPointerUp);
+      document.removeEventListener('fullscreenchange', onFullscreenChange);
       window.removeEventListener('resize', resize);
       scene.traverse((object) => {
         object.geometry?.dispose?.();
@@ -230,16 +363,6 @@ export function mountLiterDm3Scene({ root, THREE, gsap }) {
       renderer.dispose();
     }
   };
-}
-
-function addCupTicks(group, THREE) {
-  const material = new THREE.MeshBasicMaterial({ color: 0x123141, transparent: true, opacity: 0.62 });
-  const levels = [-0.44, -0.02, 0.42, 0.82];
-  levels.forEach((y, index) => {
-    const tick = new THREE.Mesh(new THREE.BoxGeometry(index === 3 ? 0.28 : 0.2, 0.018, 0.018), material);
-    tick.position.set(0.5, y, 0.02);
-    group.add(tick);
-  });
 }
 
 function formatLiters(value) {
