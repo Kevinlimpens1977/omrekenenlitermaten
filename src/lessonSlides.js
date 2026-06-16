@@ -55,6 +55,12 @@ export function buildLessonSlides(images) {
       body: 'Vul de antwoorden in en controleer daarna samen.'
     },
     {
+      kicker: 'Koppeling',
+      title: '1 liter = 1 dm3',
+      variant: 'liter-dm3',
+      body: 'Liter meet vloeistof. dm3 meet ruimte. In deze animatie zie je dat dezelfde hoeveelheid precies past.'
+    },
+    {
       image: images.answersSelfImage,
       kicker: 'Nakijken',
       title: 'Antwoorden',

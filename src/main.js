@@ -2,6 +2,7 @@ import { gsap } from 'gsap';
 import * as THREE from 'three';
 import './styles.css';
 import { buildLessonSlides } from './lessonSlides.js';
+import { mountLiterDm3Scene } from './literDm3Scene.js';
 import {
   checkAnswer,
   createFinalState,
@@ -61,8 +62,11 @@ let finalQuestions = makeQuestionSet(40, 7);
 let activeQuestion = null;
 let lastResult = null;
 let locked = false;
+let activeSlideScene = null;
 
 function render() {
+  cleanupSlideScene();
+
   if (view === 'slides') renderSlide();
   if (view === 'rules') renderRules();
   if (view === 'practice') renderPractice();
@@ -92,6 +96,11 @@ function renderShell(content) {
 
 function renderSlide() {
   const slide = slides[slideIndex];
+  if (slide.variant === 'liter-dm3') {
+    renderLiterDm3Slide(slide);
+    return;
+  }
+
   renderShell(`
     <section class="${slide.variant === 'prefixes' ? 'prefix-slide' : 'lesson-grid'} screen-panel">
       <figure class="image-frame">
@@ -117,6 +126,81 @@ function renderSlide() {
       </button>
     </nav>
   `);
+}
+
+function renderLiterDm3Slide(slide) {
+  renderShell(`
+    <section class="screen-panel liter-dm3-slide">
+      <div class="liter-dm3-copy">
+        <p class="kicker">${slide.kicker}</p>
+        <h2>${slide.title}</h2>
+        <p>${slide.body}</p>
+        <div class="liter-dm3-facts">
+          <div><strong>1 liter</strong><span>de hoeveelheid water in de maatbeker</span></div>
+          <div><strong>1 dm3</strong><span>de ruimte in een kubus van 1 dm bij 1 dm bij 1 dm</span></div>
+        </div>
+        <div class="liter-dm3-progress" aria-label="Gietvoortgang">
+          <span data-pour-progress></span>
+        </div>
+        <p class="liter-dm3-status" data-pour-status>0 L = 0 dm3</p>
+        <div class="liter-dm3-conclusion" data-pour-conclusion hidden>
+          De maatbeker bevat 1 liter water. De kubus heeft een inhoud van 1 dm3.
+          Het water past er precies in. Dus: 1 liter = 1 dm3.
+        </div>
+        <div class="liter-dm3-actions" aria-label="Animatieknoppen">
+          <button class="primary-button" type="button" data-liter-action="start" aria-label="Giet 1 liter in de kubus">
+            Giet 1 liter in de kubus
+          </button>
+          <button class="icon-button" type="button" data-liter-action="pause" aria-label="Pauzeer of speel verder">
+            Pauze
+          </button>
+          <button class="icon-button" type="button" data-liter-action="reset" aria-label="Reset de animatie">
+            Reset
+          </button>
+        </div>
+        <div class="progress">
+          <span style="width: ${((slideIndex + 1) / slides.length) * 100}%"></span>
+        </div>
+        <p class="progress-text">Dia ${slideIndex + 1} van ${slides.length}</p>
+      </div>
+      <div class="liter-dm3-scene" data-liter-dm3-root>
+        <canvas data-liter-dm3-canvas aria-label="3D animatie van 1 liter water dat in een kubus van 1 dm3 wordt gegoten"></canvas>
+        <div class="scene-label cube-label">1 dm3</div>
+        <div class="scene-label cup-label">1 liter</div>
+        <div class="scene-label width-label">1 dm breed</div>
+        <div class="scene-label height-label">1 dm hoog</div>
+        <div class="scene-label depth-label">1 dm diep</div>
+        <div class="cup-scale">
+          <span>1 L</span>
+          <span>750 ml</span>
+          <span>500 ml</span>
+          <span>250 ml</span>
+        </div>
+      </div>
+    </section>
+    ${renderSlideControls()}
+  `);
+
+  const root = document.querySelector('.liter-dm3-slide');
+  activeSlideScene = mountLiterDm3Scene({ root, THREE, gsap });
+}
+
+function renderSlideControls() {
+  return `
+    <nav class="controls" aria-label="Presentatieknoppen">
+      <button class="icon-button" type="button" data-action="prev" ${slideIndex === 0 ? 'disabled' : ''} title="Terug">
+        <span aria-hidden="true">←</span><span>Terug</span>
+      </button>
+      <button class="primary-button" type="button" data-action="${slideIndex === slides.length - 1 ? 'rules' : 'next'}">
+        <span>${slideIndex === slides.length - 1 ? 'Exit ticket' : 'Verder'}</span><span aria-hidden="true">→</span>
+      </button>
+    </nav>
+  `;
+}
+
+function cleanupSlideScene() {
+  activeSlideScene?.destroy?.();
+  activeSlideScene = null;
 }
 
 function renderPrefixBoard(slide) {

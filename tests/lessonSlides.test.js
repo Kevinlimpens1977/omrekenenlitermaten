@@ -28,7 +28,7 @@ describe('lesson slides', () => {
     expect(titles).toContain('Voorvoegsels');
     expect(titles.indexOf('Voorvoegsels')).toBe(titles.indexOf('De plekken') + 1);
     expect(titles.indexOf('Naar rechts')).toBe(titles.indexOf('Voorvoegsels') + 1);
-    expect(slides).toHaveLength(17);
+    expect(slides).toHaveLength(18);
   });
 
   it('explains deci, centi and milli as parts of one liter', () => {
@@ -41,5 +41,15 @@ describe('lesson slides', () => {
       { prefix: 'centi', symbol: 'c', part: '1/100', liter: '0,01 L', unit: 'cL' },
       { prefix: 'milli', symbol: 'm', part: '1/1000', liter: '0,001 L', unit: 'mL' }
     ]);
+  });
+
+  it('places the liter-dm3 3D slide between self practice and answers', () => {
+    const slides = buildLessonSlides(images);
+    const titles = slides.map((slide) => slide.title);
+    const literDm3Slide = slides.find((slide) => slide.title === '1 liter = 1 dm3');
+
+    expect(literDm3Slide.variant).toBe('liter-dm3');
+    expect(titles.indexOf('1 liter = 1 dm3')).toBe(titles.indexOf('Probeer eerst zelf') + 1);
+    expect(titles.indexOf('Antwoorden')).toBe(titles.indexOf('1 liter = 1 dm3') + 1);
   });
 });
