@@ -167,9 +167,9 @@ function renderLiterDm3Slide(slide) {
         <canvas data-liter-dm3-canvas aria-label="3D animatie van 1 liter water dat in een kubus van 1 dm3 wordt gegoten"></canvas>
         <div class="scene-label cube-label">1 dm3</div>
         <div class="scene-label cup-label">1 liter</div>
-        <div class="scene-label width-label">1 dm breed</div>
-        <div class="scene-label height-label">1 dm hoog</div>
-        <div class="scene-label depth-label">1 dm diep</div>
+        <div class="edge-label edge-label-height" aria-label="hoogte 1 dm">1 dm</div>
+        <div class="edge-label edge-label-front" aria-label="breedte 1 dm">1 dm</div>
+        <div class="edge-label edge-label-depth" aria-label="diepte 1 dm">1 dm</div>
         <div class="cup-scale">
           <span>1 L</span>
           <span>750 ml</span>

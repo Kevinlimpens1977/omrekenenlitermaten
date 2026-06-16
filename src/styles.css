@@ -376,10 +376,15 @@ p {
 }
 
 .scene-label,
+.edge-label,
 .cup-scale {
   position: absolute;
   z-index: 2;
   pointer-events: none;
+}
+
+.scene-label,
+.cup-scale {
   border-radius: 8px;
   border: 2px solid rgba(18, 49, 65, 0.1);
   background: rgba(255, 255, 255, 0.86);
@@ -403,19 +408,34 @@ p {
   top: 16%;
 }
 
-.width-label {
-  left: 20%;
-  bottom: 15%;
+.edge-label {
+  color: #050b0f;
+  font-size: clamp(1.75rem, 3.2vw, 2.35rem);
+  font-weight: 950;
+  line-height: 1;
+  text-shadow:
+    0 2px 0 rgba(255, 255, 255, 0.78),
+    0 6px 14px rgba(18, 49, 65, 0.2);
+  white-space: nowrap;
 }
 
-.height-label {
-  left: 5%;
-  top: 42%;
+.edge-label-height {
+  left: 13%;
+  top: 38%;
+  transform: rotate(-92deg);
+  transform-origin: center;
 }
 
-.depth-label {
-  left: 37%;
-  bottom: 22%;
+.edge-label-front {
+  left: 27%;
+  bottom: 18%;
+  transform: rotate(14deg);
+}
+
+.edge-label-depth {
+  left: 51%;
+  bottom: 18%;
+  transform: rotate(-36deg);
 }
 
 .cup-scale {
