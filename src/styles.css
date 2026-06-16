@@ -427,7 +427,6 @@ p {
 }
 
 .scene-label,
-.edge-label,
 .scene-focus-button,
 .scene-drag-hint {
   position: absolute;
@@ -435,7 +434,6 @@ p {
 }
 
 .scene-label,
-.edge-label,
 .scene-drag-hint {
   pointer-events: none;
 }
@@ -454,9 +452,11 @@ p {
   font-size: clamp(0.84rem, 1.4vw, 1.05rem);
 }
 
-.cube-label {
-  left: 18%;
-  top: 18%;
+.cube-formula-label {
+  left: 16px;
+  top: 16px;
+  max-width: min(360px, calc(100% - 32px));
+  font-size: clamp(0.9rem, 1.6vw, 1.15rem);
 }
 
 .cup-label {
@@ -491,36 +491,6 @@ p {
   font-weight: 850;
   text-align: center;
   box-shadow: 0 10px 24px rgba(26, 81, 94, 0.12);
-}
-
-.edge-label {
-  color: #050b0f;
-  font-size: clamp(1.75rem, 3.2vw, 2.35rem);
-  font-weight: 950;
-  line-height: 1;
-  text-shadow:
-    0 2px 0 rgba(255, 255, 255, 0.78),
-    0 6px 14px rgba(18, 49, 65, 0.2);
-  white-space: nowrap;
-}
-
-.edge-label-height {
-  left: 13%;
-  top: 38%;
-  transform: rotate(-92deg);
-  transform-origin: center;
-}
-
-.edge-label-front {
-  left: 27%;
-  bottom: 18%;
-  transform: rotate(14deg);
-}
-
-.edge-label-depth {
-  left: 51%;
-  bottom: 18%;
-  transform: rotate(-36deg);
 }
 
 .progress {

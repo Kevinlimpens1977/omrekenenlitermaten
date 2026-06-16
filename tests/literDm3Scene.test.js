@@ -17,7 +17,7 @@ describe('liter dm3 scene state', () => {
     expect(getLiterDm3State(0.5)).toMatchObject({
       cupLevel: 0.5,
       cubeLevel: 0.5,
-      streamVisible: true,
+      streamVisible: false,
       equivalence: '0,5 L = 0,5 dm3'
     });
 
@@ -37,6 +37,7 @@ describe('liter dm3 scene state', () => {
   it('shows the water stream only while there is water to pour', () => {
     expect(getLiterDm3State(0, true).streamVisible).toBe(false);
     expect(getLiterDm3State(0.5, true).streamVisible).toBe(true);
+    expect(getLiterDm3State(0.5, false).streamVisible).toBe(false);
     expect(getLiterDm3State(1, true).streamVisible).toBe(false);
   });
 
@@ -57,8 +58,8 @@ describe('liter dm3 scene state', () => {
   });
 
   it('detects when the cup is above the cube opening', () => {
-    expect(isCupAboveCube({ x: -0.72, y: 2.18 })).toBe(true);
-    expect(isCupAboveCube({ x: 1.2, y: 2.18 })).toBe(false);
-    expect(isCupAboveCube({ x: -0.72, y: 0.8 })).toBe(false);
+    expect(isCupAboveCube({ x: 0.48, y: 1.58 })).toBe(true);
+    expect(isCupAboveCube({ x: 1.2, y: 1.58 })).toBe(false);
+    expect(isCupAboveCube({ x: 0.48, y: 0.8 })).toBe(false);
   });
 });

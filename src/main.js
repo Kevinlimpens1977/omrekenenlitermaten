@@ -169,11 +169,8 @@ function renderLiterDm3Slide(slide) {
         <button class="scene-focus-button" type="button" data-liter-action="focus" aria-label="Toon de animatie fullscreen">
           Fullscreen
         </button>
-        <div class="scene-label cube-label">1 dm3</div>
+        <div class="scene-label cube-formula-label">Kubus is 1 dm x 1 dm x 1 dm = 1 dm3</div>
         <div class="scene-label cup-label">1 liter</div>
-        <div class="edge-label edge-label-height" aria-label="hoogte 1 dm">1 dm</div>
-        <div class="edge-label edge-label-front" aria-label="breedte 1 dm">1 dm</div>
-        <div class="edge-label edge-label-depth" aria-label="diepte 1 dm">1 dm</div>
         <p class="scene-drag-hint">Sleep de maatbeker boven de kubus om te gieten.</p>
       </div>
     </section>

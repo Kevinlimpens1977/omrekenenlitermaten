@@ -6,7 +6,7 @@ export function getLiterDm3State(pourProgress, activelyPouring = false) {
     progress,
     cupLevel: Math.round((1 - progress) * 100) / 100,
     cubeLevel: rounded,
-    streamVisible: progress > 0 && progress < 1 && (activelyPouring || progress > 0.05),
+    streamVisible: progress > 0 && progress < 1 && activelyPouring,
     equivalence: `${formatLiters(rounded)} L = ${formatLiters(rounded)} dm3`,
     conclusionVisible: progress >= 1
   };
@@ -26,7 +26,7 @@ export function getCupWorldPositionFromPointer(pointer, bounds) {
 }
 
 export function isCupAboveCube(position) {
-  return position.x > -1.85 && position.x < -0.1 && position.y > 1.25;
+  return position.x > -0.25 && position.x < 1.05 && position.y > 1.2;
 }
 
 export function mountLiterDm3Scene({ root, THREE, gsap }) {
@@ -57,8 +57,8 @@ export function mountLiterDm3Scene({ root, THREE, gsap }) {
   camera.position.set(4.4, 3.2, 5.2);
   camera.lookAt(0, 0.6, 0);
 
-  scene.add(new THREE.AmbientLight(0xffffff, 2.4));
-  const keyLight = new THREE.DirectionalLight(0xffffff, 2.6);
+  scene.add(new THREE.AmbientLight(0xffffff, 2.6));
+  const keyLight = new THREE.DirectionalLight(0xffffff, 2.8);
   keyLight.position.set(4, 6, 5);
   scene.add(keyLight);
 
@@ -76,14 +76,13 @@ export function mountLiterDm3Scene({ root, THREE, gsap }) {
 
   const cubeGlass = new THREE.Mesh(
     new THREE.BoxGeometry(1.5, 1.5, 1.5),
-    new THREE.MeshPhysicalMaterial({
+    new THREE.MeshStandardMaterial({
       color: 0xbdefff,
       metalness: 0,
-      roughness: 0.06,
-      transmission: 0.62,
+      roughness: 0.2,
       transparent: true,
-      opacity: 0.22,
-      thickness: 0.3
+      opacity: 0.15,
+      depthWrite: false
     })
   );
   cubeGroup.add(cubeGlass);
@@ -95,13 +94,14 @@ export function mountLiterDm3Scene({ root, THREE, gsap }) {
   cubeGroup.add(cubeEdges);
 
   const cubeWater = new THREE.Mesh(
-    new THREE.BoxGeometry(1.42, 1.5, 1.42),
-    new THREE.MeshPhysicalMaterial({
+    new THREE.BoxGeometry(1.36, 1.44, 1.36),
+    new THREE.MeshStandardMaterial({
       color: 0x2f9fbe,
       transparent: true,
-      opacity: 0.56,
-      roughness: 0.1,
-      metalness: 0.02
+      opacity: 0.72,
+      roughness: 0.18,
+      metalness: 0.02,
+      depthWrite: false
     })
   );
   cubeWater.scale.y = 0.001;
@@ -114,20 +114,21 @@ export function mountLiterDm3Scene({ root, THREE, gsap }) {
 
   const cupWall = new THREE.Mesh(
     new THREE.CylinderGeometry(0.52, 0.45, 1.75, 48, 1, true),
-    new THREE.MeshPhysicalMaterial({
+    new THREE.MeshStandardMaterial({
       color: 0xf4fdff,
       transparent: true,
-      opacity: 0.18,
-      roughness: 0.02,
-      transmission: 0.78,
-      thickness: 0.18
+      opacity: 0.2,
+      roughness: 0.18,
+      depthWrite: false
     })
   );
   cupGroup.add(cupWall);
 
+  const cupEdgeMaterial = new THREE.MeshBasicMaterial({ color: 0x536a72, transparent: true, opacity: 0.78 });
+
   const cupRim = new THREE.Mesh(
-    new THREE.TorusGeometry(0.52, 0.015, 8, 48),
-    new THREE.MeshBasicMaterial({ color: 0x123141, transparent: true, opacity: 0.7 })
+    new THREE.TorusGeometry(0.52, 0.018, 8, 48),
+    cupEdgeMaterial
   );
   cupRim.position.y = 0.88;
   cupRim.rotation.x = Math.PI / 2;
@@ -140,13 +141,20 @@ export function mountLiterDm3Scene({ root, THREE, gsap }) {
   cupBottom.position.y = -0.88;
   cupGroup.add(cupBottom);
 
+  [-0.43, 0.43].forEach((x) => {
+    const sideEdge = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 1.72, 10), cupEdgeMaterial);
+    sideEdge.position.set(x, 0, 0.02);
+    cupGroup.add(sideEdge);
+  });
+
   const cupWater = new THREE.Mesh(
     new THREE.CylinderGeometry(0.47, 0.4, 1.62, 48),
-    new THREE.MeshPhysicalMaterial({
+    new THREE.MeshStandardMaterial({
       color: 0x2f9fbe,
       transparent: true,
-      opacity: 0.68,
-      roughness: 0.08
+      opacity: 0.82,
+      roughness: 0.12,
+      depthWrite: false
     })
   );
   cupWater.position.y = -0.02;
@@ -161,13 +169,22 @@ export function mountLiterDm3Scene({ root, THREE, gsap }) {
   cupGroup.add(spout);
 
   const stream = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.035, 0.05, 1.65, 16),
-    new THREE.MeshBasicMaterial({ color: 0x2f9fbe, transparent: true, opacity: 0.72 })
+    new THREE.BoxGeometry(1.3, 0.085, 0.085),
+    new THREE.MeshBasicMaterial({ color: 0x2f9fbe, transparent: true, opacity: 0.84 })
   );
-  stream.position.set(0.02, 1.62, 0);
-  stream.rotation.z = -0.92;
+  stream.position.set(-0.7, 1.45, 0.05);
+  stream.rotation.z = -0.28;
   stream.visible = false;
   scene.add(stream);
+
+  const streamHighlight = new THREE.Mesh(
+    new THREE.BoxGeometry(0.28, 0.11, 0.11),
+    new THREE.MeshBasicMaterial({ color: 0xbdf3ff, transparent: true, opacity: 0.9 })
+  );
+  streamHighlight.position.set(-0.12, 1.61, 0.08);
+  streamHighlight.rotation.z = -0.28;
+  streamHighlight.visible = false;
+  scene.add(streamHighlight);
 
   const autoTween = { move: null };
 
@@ -181,9 +198,8 @@ export function mountLiterDm3Scene({ root, THREE, gsap }) {
     cupWater.position.y = -0.83 + (1.62 * state.cupLevel) / 2;
 
     stream.visible = state.streamVisible;
-    stream.position.x = (cupGroup.position.x - 1.05) / 2;
-    stream.position.y = (cupGroup.position.y + 0.72) / 2;
-    stream.scale.y = Math.max(0.25, Math.min(1.1, cupGroup.position.y - 0.55));
+    streamHighlight.visible = state.streamVisible;
+    streamHighlight.position.x = -1.1 + ((Date.now() * 0.0015) % 1.15);
     if (progressFill) progressFill.style.width = `${state.progress * 100}%`;
     if (statusLabel) statusLabel.textContent = state.equivalence;
     if (conclusion) conclusion.hidden = !state.conclusionVisible;
@@ -209,11 +225,10 @@ export function mountLiterDm3Scene({ root, THREE, gsap }) {
     const overCube = isCupAboveCube(cupGroup.position);
     activelyPouring = !paused && (dragging || autoPouring) && overCube && progress.value < 1;
 
-    const targetTilt = activelyPouring ? 1.08 : 0;
-    cupGroup.rotation.z += (targetTilt - cupGroup.rotation.z) * 0.14;
+    cupGroup.rotation.z += (0 - cupGroup.rotation.z) * 0.18;
 
     if (activelyPouring) {
-      progress.value = Math.min(1, progress.value + deltaSeconds * 0.28);
+      progress.value = Math.min(1, progress.value + deltaSeconds * 0.2);
       if (progress.value >= 1) {
         autoPouring = false;
         activelyPouring = false;
@@ -233,8 +248,8 @@ export function mountLiterDm3Scene({ root, THREE, gsap }) {
     if (progress.value >= 1) progress.value = 0;
     autoTween.move?.kill?.();
     autoTween.move = gsap.to(cupGroup.position, {
-      x: -0.72,
-      y: 1.78,
+      x: 0.48,
+      y: 1.58,
       z: 0,
       duration: 0.8,
       ease: 'power2.inOut'
