@@ -50,6 +50,8 @@ export function buildLessonSlides(images) {
     },
     {
       image: images.selfPracticeImage,
+      supportImage: images.schemaFullImage,
+      supportAlt: 'Omrekenschema L dL cL mL',
       kicker: 'Invullen',
       title: 'Probeer eerst zelf',
       body: 'Vul de antwoorden in en controleer daarna samen.'

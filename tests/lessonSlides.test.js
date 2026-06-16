@@ -52,4 +52,12 @@ describe('lesson slides', () => {
     expect(titles.indexOf('1 liter = 1 dm3')).toBe(titles.indexOf('Probeer eerst zelf') + 1);
     expect(titles.indexOf('Antwoorden')).toBe(titles.indexOf('1 liter = 1 dm3') + 1);
   });
+
+  it('shows the conversion schema above the self practice assignments', () => {
+    const slides = buildLessonSlides(images);
+    const selfPracticeSlide = slides.find((slide) => slide.title === 'Probeer eerst zelf');
+
+    expect(selfPracticeSlide.supportImage).toBe(images.schemaFullImage);
+    expect(selfPracticeSlide.supportAlt).toBe('Omrekenschema L dL cL mL');
+  });
 });

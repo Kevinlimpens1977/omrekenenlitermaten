@@ -163,6 +163,11 @@ p {
   place-items: center;
 }
 
+.image-frame-stacked {
+  align-content: center;
+  gap: 16px;
+}
+
 .image-frame img {
   display: block;
   max-width: 100%;
@@ -170,6 +175,14 @@ p {
   border-radius: 6px;
   object-fit: contain;
   box-shadow: 0 12px 32px rgba(18, 49, 65, 0.16);
+}
+
+.image-frame .support-image {
+  max-height: 160px;
+}
+
+.image-frame-stacked img:not(.support-image) {
+  max-height: 42vh;
 }
 
 .lesson-copy {

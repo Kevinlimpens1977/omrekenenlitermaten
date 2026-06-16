@@ -103,7 +103,8 @@ function renderSlide() {
 
   renderShell(`
     <section class="${slide.variant === 'prefixes' ? 'prefix-slide' : 'lesson-grid'} screen-panel">
-      <figure class="image-frame">
+      <figure class="image-frame ${slide.supportImage ? 'image-frame-stacked' : ''}">
+        ${slide.supportImage ? `<img class="support-image" src="${slide.supportImage}" alt="${slide.supportAlt ?? 'Omrekenschema'}" />` : ''}
         <img src="${slide.image}" alt="${slide.title}" />
       </figure>
       <article class="lesson-copy">
