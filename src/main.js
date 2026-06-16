@@ -1,6 +1,7 @@
 import { gsap } from 'gsap';
 import * as THREE from 'three';
 import './styles.css';
+import { buildLessonSlides } from './lessonSlides.js';
 import {
   checkAnswer,
   createFinalState,
@@ -32,104 +33,24 @@ import exampleTwoImage from '../voorbeeldvraag2.jpg';
 const app = document.querySelector('#app');
 const canvas = document.querySelector('#space-canvas');
 
-const slides = [
-  {
-    image: titleImage,
-    kicker: 'Paragraaf',
-    title: 'Omrekenen',
-    body: 'We leren inhoudsmaten omrekenen in kleine stappen.'
-  },
-  {
-    image: introImage,
-    kicker: 'Start',
-    title: 'Inhoud in liters',
-    body: 'Liter, deciliter, centiliter en milliliter horen bij elkaar.'
-  },
-  {
-    image: schemaTitleImage,
-    kicker: 'Stap 1',
-    title: 'Het literschema',
-    body: 'Dit wordt je belangrijkste gereedschap.'
-  },
-  {
-    image: schemaBaseImage,
-    kicker: 'Stap 2',
-    title: 'De plekken',
-    body: 'Zet de maten in de vaste volgorde: L, dL, cL, mL.'
-  },
-  {
-    image: schemaRightImage,
-    kicker: 'Stap 3',
-    title: 'Naar rechts',
-    body: 'Elke stap naar rechts is keer 10.'
-  },
-  {
-    image: schemaFullImage,
-    kicker: 'Stap 4',
-    title: 'Naar links',
-    body: 'Elke stap naar links is delen door 10.'
-  },
-  {
-    image: selfPracticeImage,
-    kicker: 'Invullen',
-    title: 'Probeer eerst zelf',
-    body: 'Vul de antwoorden in en controleer daarna samen.'
-  },
-  {
-    image: answersSelfImage,
-    kicker: 'Nakijken',
-    title: 'Antwoorden',
-    body: 'Vergelijk je werk en verbeter met een andere kleur.'
-  },
-  {
-    image: literImage,
-    kicker: 'Koppeling',
-    title: '1 cm3 = 1 mL',
-    body: 'Een kubieke centimeter is precies evenveel als een milliliter.'
-  },
-  {
-    image: geometryImage,
-    kicker: 'Grote sprong',
-    title: '1 dm3 = 1 L',
-    body: 'Een kubieke decimeter is precies een liter.'
-  },
-  {
-    image: togetherImage,
-    kicker: 'Samen oefenen',
-    title: 'Maak de opdrachten',
-    body: 'Gebruik het schema en let op de richting van de stappen.'
-  },
-  {
-    image: exampleImage,
-    kicker: 'Voorbeeld',
-    title: 'Vraag stap voor stap',
-    body: 'Bepaal eerst de beginmaat, daarna de eindmaat en tel de stappen.'
-  },
-  {
-    image: exampleTwoImage,
-    kicker: 'Voorbeeld',
-    title: 'Ruimtefiguren',
-    body: 'Reken cm3 eerst om via de koppeling met mL.'
-  },
-  {
-    image: togetherAnswersImage,
-    kicker: 'Nakijken',
-    title: 'Uitwerkingen',
-    body: 'Controleer de tussenstappen, niet alleen het eindantwoord.'
-  },
-  {
-    image: planImage,
-    kicker: 'Houvast',
-    title: 'Jouw stappenplan',
-    body: 'Gebruik dit bij elke nieuwe som.'
-  },
-  {
-    image: summaryImage,
-    kicker: 'Samenvatting',
-    title: 'Klaar voor de exit ticket',
-    body: 'Nu laat je zien dat je het ook zonder hulp steeds beter kunt.'
-  }
-];
+const slides = buildLessonSlides({
+  titleImage,
+  introImage,
+  schemaTitleImage,
+  schemaBaseImage,
+  schemaRightImage,
+  schemaFullImage,
+  selfPracticeImage,
+  answersSelfImage,
+  literImage,
+  geometryImage,
+  togetherImage,
+  exampleImage,
+  exampleTwoImage,
+  togetherAnswersImage,
+  planImage,
+  summaryImage
+});
 
 let view = 'slides';
 let slideIndex = 0;
@@ -172,7 +93,7 @@ function renderShell(content) {
 function renderSlide() {
   const slide = slides[slideIndex];
   renderShell(`
-    <section class="lesson-grid screen-panel">
+    <section class="${slide.variant === 'prefixes' ? 'prefix-slide' : 'lesson-grid'} screen-panel">
       <figure class="image-frame">
         <img src="${slide.image}" alt="${slide.title}" />
       </figure>
@@ -180,6 +101,7 @@ function renderSlide() {
         <p class="kicker">${slide.kicker}</p>
         <h2>${slide.title}</h2>
         <p>${slide.body}</p>
+        ${slide.variant === 'prefixes' ? renderPrefixBoard(slide) : ''}
         <div class="progress">
           <span style="width: ${((slideIndex + 1) / slides.length) * 100}%"></span>
         </div>
@@ -195,6 +117,36 @@ function renderSlide() {
       </button>
     </nav>
   `);
+}
+
+function renderPrefixBoard(slide) {
+  return `
+    <div class="prefix-board" aria-label="Uitleg over voorvoegsels">
+      <div class="base-liter">
+        <span class="base-letter">L</span>
+        <div>
+          <strong>liter</strong>
+          <span>De L blijft staan. Het voorvoegsel komt ervoor.</span>
+        </div>
+      </div>
+      <div class="prefix-list">
+        ${slide.prefixes
+          .map(
+            (item) => `
+              <div class="prefix-card">
+                <span class="prefix-symbol">${item.symbol}</span>
+                <div>
+                  <strong>${item.prefix}</strong>
+                  <span>${item.prefix} = ${item.part} = ${item.liter}</span>
+                </div>
+                <b>${item.symbol} + L = ${item.unit}</b>
+              </div>
+            `
+          )
+          .join('')}
+      </div>
+    </div>
+  `;
 }
 
 function renderRules() {

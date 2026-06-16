@@ -136,6 +136,13 @@ p {
   align-items: center;
 }
 
+.prefix-slide {
+  display: grid;
+  grid-template-columns: minmax(0, 0.95fr) minmax(360px, 1.05fr);
+  gap: 28px;
+  align-items: center;
+}
+
 .screen-panel {
   min-height: 0;
   padding: clamp(18px, 4vw, 38px);
@@ -163,6 +170,86 @@ p {
   display: flex;
   flex-direction: column;
   justify-content: center;
+}
+
+.prefix-board {
+  display: grid;
+  gap: 14px;
+  margin: 10px 0 20px;
+}
+
+.base-liter,
+.prefix-card {
+  border: 2px solid rgba(18, 49, 65, 0.12);
+  border-radius: 8px;
+  background: #f8fcfc;
+}
+
+.base-liter {
+  min-height: 86px;
+  padding: 14px;
+  display: grid;
+  grid-template-columns: 74px 1fr;
+  align-items: center;
+  gap: 14px;
+}
+
+.base-letter,
+.prefix-symbol {
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: #2f7fc4;
+  color: #fff;
+  font-weight: 950;
+}
+
+.base-letter {
+  width: 70px;
+  height: 58px;
+  font-size: 2.6rem;
+}
+
+.base-liter strong,
+.prefix-card strong,
+.prefix-card b {
+  display: block;
+}
+
+.base-liter span,
+.prefix-card span {
+  display: block;
+  color: #4f6b72;
+  font-weight: 750;
+  line-height: 1.35;
+}
+
+.prefix-list {
+  display: grid;
+  gap: 10px;
+}
+
+.prefix-card {
+  min-height: 86px;
+  padding: 12px;
+  display: grid;
+  grid-template-columns: 62px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+}
+
+.prefix-symbol {
+  width: 58px;
+  height: 58px;
+  font-size: 2rem;
+}
+
+.prefix-card b {
+  justify-self: end;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #ffe16a;
+  white-space: nowrap;
 }
 
 .progress {
@@ -366,6 +453,7 @@ p {
   }
 
   .lesson-grid,
+  .prefix-slide,
   .rule-grid {
     grid-template-columns: 1fr;
   }
@@ -411,5 +499,16 @@ p {
 
   .answer-row {
     grid-template-columns: 1fr;
+  }
+
+  .prefix-card {
+    grid-template-columns: 52px 1fr;
+  }
+
+  .prefix-card b {
+    grid-column: 1 / -1;
+    justify-self: stretch;
+    text-align: center;
+    white-space: normal;
   }
 }

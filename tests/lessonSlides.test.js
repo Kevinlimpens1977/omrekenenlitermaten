@@ -1,0 +1,45 @@
+import { describe, expect, it } from 'vitest';
+import { buildLessonSlides } from '../src/lessonSlides.js';
+
+const images = {
+  titleImage: 'title.jpg',
+  introImage: 'intro.jpg',
+  schemaTitleImage: 'schema-title.jpg',
+  schemaBaseImage: 'schema-base.jpg',
+  schemaRightImage: 'schema-right.jpg',
+  schemaFullImage: 'schema-full.jpg',
+  selfPracticeImage: 'self.jpg',
+  answersSelfImage: 'answers.jpg',
+  literImage: 'liter.jpg',
+  geometryImage: 'geometry.jpg',
+  togetherImage: 'together.jpg',
+  exampleImage: 'example.jpg',
+  exampleTwoImage: 'example-two.jpg',
+  togetherAnswersImage: 'together-answers.jpg',
+  planImage: 'plan.jpg',
+  summaryImage: 'summary.jpg'
+};
+
+describe('lesson slides', () => {
+  it('places the prefix explanation slide between the places slide and moving right', () => {
+    const slides = buildLessonSlides(images);
+    const titles = slides.map((slide) => slide.title);
+
+    expect(titles).toContain('Voorvoegsels');
+    expect(titles.indexOf('Voorvoegsels')).toBe(titles.indexOf('De plekken') + 1);
+    expect(titles.indexOf('Naar rechts')).toBe(titles.indexOf('Voorvoegsels') + 1);
+    expect(slides).toHaveLength(17);
+  });
+
+  it('explains deci, centi and milli as parts of one liter', () => {
+    const slides = buildLessonSlides(images);
+    const prefixSlide = slides.find((slide) => slide.title === 'Voorvoegsels');
+
+    expect(prefixSlide.variant).toBe('prefixes');
+    expect(prefixSlide.prefixes).toEqual([
+      { prefix: 'deci', symbol: 'd', part: '1/10', liter: '0,1 L', unit: 'dL' },
+      { prefix: 'centi', symbol: 'c', part: '1/100', liter: '0,01 L', unit: 'cL' },
+      { prefix: 'milli', symbol: 'm', part: '1/1000', liter: '0,001 L', unit: 'mL' }
+    ]);
+  });
+});
