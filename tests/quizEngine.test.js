@@ -4,6 +4,9 @@ import {
   convertVolume,
   createFinalState,
   createPracticeState,
+  formatNumber,
+  isPracticeFinalShortcut,
+  makeQuestion,
   resolveFinalAnswer,
   resolvePracticeAnswer
 } from '../src/quizEngine.js';
@@ -25,6 +28,13 @@ describe('volume conversion', () => {
     expect(checkAnswer('7,5', 7.5)).toBe(true);
     expect(checkAnswer('1.20', 1.2)).toBe(true);
     expect(checkAnswer('1,3', 1.2)).toBe(false);
+  });
+
+  it('formats examples without a thousands separator', () => {
+    expect(formatNumber(1200)).toBe('1200');
+    expect(formatNumber(1800)).toBe('1800');
+    expect(formatNumber(1.25)).toBe('1,25');
+    expect(makeQuestion(7).prompt).toBe('1200 cm3 = ... L');
   });
 });
 
@@ -76,5 +86,14 @@ describe('final game state', () => {
 
     expect(state.correctStreak).toBe(10);
     expect(state.won).toBe(true);
+  });
+});
+
+describe('hidden shortcuts', () => {
+  it('recognizes shift-Q only while practicing in round one', () => {
+    expect(isPracticeFinalShortcut({ shiftKey: true, key: 'Q' }, 'practice')).toBe(true);
+    expect(isPracticeFinalShortcut({ shiftKey: true, key: 'q' }, 'practice-feedback')).toBe(true);
+    expect(isPracticeFinalShortcut({ shiftKey: false, key: 'q' }, 'practice')).toBe(false);
+    expect(isPracticeFinalShortcut({ shiftKey: true, key: 'q' }, 'slides')).toBe(false);
   });
 });

@@ -127,6 +127,12 @@ export function makeQuestionSet(count, offset = 0) {
 
 export function formatNumber(value) {
   return Number(value).toLocaleString('nl-NL', {
-    maximumFractionDigits: 2
+    maximumFractionDigits: 2,
+    useGrouping: false
   });
+}
+
+export function isPracticeFinalShortcut(event, view) {
+  const isPracticeView = view === 'practice' || view === 'practice-feedback';
+  return isPracticeView && event.shiftKey && String(event.key).toLowerCase() === 'q';
 }

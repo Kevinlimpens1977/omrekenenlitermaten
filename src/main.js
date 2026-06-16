@@ -6,6 +6,7 @@ import {
   createFinalState,
   createPracticeState,
   formatNumber,
+  isPracticeFinalShortcut,
   makeQuestionSet,
   resolveFinalAnswer,
   resolvePracticeAnswer
@@ -448,6 +449,13 @@ window.addEventListener(
       }
       event.preventDefault();
       event.stopPropagation();
+      return;
+    }
+
+    if (isPracticeFinalShortcut(event, view)) {
+      event.preventDefault();
+      view = 'final-rules';
+      render();
       return;
     }
 
