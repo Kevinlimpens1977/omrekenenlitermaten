@@ -1,5 +1,6 @@
 const CIRCLE_PI = Math.PI;
 const CIRCLE_C_GIVEN = 153.94;
+const CIRCLE_C_RADIUS_ROUNDED = roundOne(CIRCLE_C_GIVEN / (2 * CIRCLE_PI));
 
 function roundOne(value) {
   return Number(value.toFixed(1));
@@ -32,9 +33,9 @@ export const CIRCLE_EXERCISE = {
     'radius-B': 13.5,
     'circumference-B': roundOne(CIRCLE_PI * 27),
     'area-B': roundOne(CIRCLE_PI * 13.5 * 13.5),
-    'radius-C': roundOne(CIRCLE_C_GIVEN / (2 * CIRCLE_PI)),
+    'radius-C': CIRCLE_C_RADIUS_ROUNDED,
     'diameter-C': roundOne(CIRCLE_C_GIVEN / CIRCLE_PI),
-    'area-C': roundOne((CIRCLE_C_GIVEN / (2 * CIRCLE_PI)) ** 2 * CIRCLE_PI)
+    'area-C': roundOne(CIRCLE_C_RADIUS_ROUNDED * CIRCLE_C_RADIUS_ROUNDED * CIRCLE_PI)
   },
   rawAnswers: {
     'circumference-A': 2 * CIRCLE_PI * 3.6,
@@ -43,7 +44,7 @@ export const CIRCLE_EXERCISE = {
     'area-B': CIRCLE_PI * 13.5 * 13.5,
     'radius-C': CIRCLE_C_GIVEN / (2 * CIRCLE_PI),
     'diameter-C': CIRCLE_C_GIVEN / CIRCLE_PI,
-    'area-C': (CIRCLE_C_GIVEN / (2 * CIRCLE_PI)) ** 2 * CIRCLE_PI
+    'area-C': CIRCLE_C_RADIUS_ROUNDED * CIRCLE_C_RADIUS_ROUNDED * CIRCLE_PI
   }
 };
 

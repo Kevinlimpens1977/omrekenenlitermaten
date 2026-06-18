@@ -28,7 +28,7 @@ describe('circle table exercise', () => {
       'area-B': 572.6,
       'radius-C': 24.5,
       'diameter-C': 49,
-      'area-C': 1885.8
+      'area-C': 1885.7
     });
   });
 
@@ -56,7 +56,7 @@ describe('circle table exercise', () => {
       'area-B': '572,6',
       'radius-C': '24,5',
       'diameter-C': '49,0',
-      'area-C': '1885,8'
+      'area-C': '1885,7'
     };
 
     const result = checkCircleExercise(values);
@@ -64,6 +64,25 @@ describe('circle table exercise', () => {
     expect(result.complete).toBe(true);
     expect(result.allCorrect).toBe(true);
     expect(result.fields['circumference-A']).toMatchObject({ status: 'correct' });
+    expect(result.fields['area-C']).toMatchObject({ status: 'correct' });
+  });
+
+  it('accepts circle C area calculated from the rounded radius shown in the table', () => {
+    const values = {
+      'diameter-A': '7,2',
+      'circumference-A': '22,6',
+      'area-A': '40,7',
+      'radius-B': '13,5',
+      'circumference-B': '84,8',
+      'area-B': '572,6',
+      'radius-C': '24,5',
+      'diameter-C': '49,0',
+      'area-C': '1885,7'
+    };
+
+    const result = checkCircleExercise(values);
+
+    expect(result.allCorrect).toBe(true);
     expect(result.fields['area-C']).toMatchObject({ status: 'correct' });
   });
 
@@ -77,7 +96,7 @@ describe('circle table exercise', () => {
       'area-B': '572,6',
       'radius-C': '24,5',
       'diameter-C': '49',
-      'area-C': '1885,79'
+      'area-C': '1885,74'
     };
 
     const result = checkCircleExercise(values);
