@@ -3,10 +3,14 @@ import {
   checkAnswer,
   convertVolume,
   createFinalState,
+  createEndlessPracticeState,
   createPracticeState,
+  ENDLESS_QUESTION_BANK,
   formatNumber,
   isPracticeFinalShortcut,
   makeQuestion,
+  makeEndlessQuestion,
+  resolveEndlessPracticeAnswer,
   resolveFinalAnswer,
   resolvePracticeAnswer
 } from '../src/quizEngine.js';
@@ -86,6 +90,40 @@ describe('final game state', () => {
 
     expect(state.correctStreak).toBe(10);
     expect(state.won).toBe(true);
+  });
+});
+
+describe('endless extra practice', () => {
+  it('offers varied volume conversions including geometric units', () => {
+    const pairs = ENDLESS_QUESTION_BANK.map((question) => `${question.from}->${question.to}`);
+
+    expect(pairs).toContain('cm3->dm3');
+    expect(pairs).toContain('dm3->mL');
+    expect(pairs).toContain('L->mL');
+    expect(pairs).toContain('cm3->cL');
+    expect(new Set(pairs).size).toBeGreaterThan(10);
+  });
+
+  it('tracks correct, wrong, total, current streak and best streak', () => {
+    let state = createEndlessPracticeState();
+
+    state = resolveEndlessPracticeAnswer(state, true);
+    state = resolveEndlessPracticeAnswer(state, true);
+    state = resolveEndlessPracticeAnswer(state, false);
+    state = resolveEndlessPracticeAnswer(state, true);
+
+    expect(state.played).toBe(4);
+    expect(state.correct).toBe(3);
+    expect(state.wrong).toBe(1);
+    expect(state.correctStreak).toBe(1);
+    expect(state.bestStreak).toBe(2);
+  });
+
+  it('builds endless questions from the varied bank', () => {
+    const question = makeEndlessQuestion(0);
+
+    expect(question.prompt).toBe('1250 cm3 = ... dm3');
+    expect(question.answer).toBe(1.25);
   });
 });
 

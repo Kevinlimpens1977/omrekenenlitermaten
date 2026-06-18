@@ -6,11 +6,14 @@ import { mountLiterDm3Scene } from './literDm3Scene.js';
 import { checkNumberPuzzle, NUMBER_PUZZLE } from './numberPuzzle.js';
 import {
   checkAnswer,
+  createEndlessPracticeState,
   createFinalState,
   createPracticeState,
   formatNumber,
   isPracticeFinalShortcut,
+  makeEndlessQuestion,
   makeQuestionSet,
+  resolveEndlessPracticeAnswer,
   resolveFinalAnswer,
   resolvePracticeAnswer
 } from './quizEngine.js';
@@ -56,24 +59,30 @@ const slides = buildLessonSlides({
   summaryImage
 });
 
-let view = 'slides';
+let view = 'home';
 let slideIndex = 0;
 let practiceState = createPracticeState(20);
 let finalState = createFinalState();
+let endlessState = createEndlessPracticeState();
 let practiceQuestions = makeQuestionSet(20, 0);
 let finalQuestions = makeQuestionSet(40, 7);
+let endlessQuestionIndex = 0;
 let activeQuestion = null;
 let lastResult = null;
+let lastEndlessResult = null;
 let locked = false;
 let activeSlideScene = null;
-let puzzleValues = Array(NUMBER_PUZZLE.size * NUMBER_PUZZLE.size).fill('');
+let puzzleValues = Array(NUMBER_PUZZLE.rows * NUMBER_PUZZLE.cols).fill('');
 let puzzleSolved = false;
 let puzzleScratchpad = '';
 
 function render() {
   cleanupSlideScene();
 
+  if (view === 'home') renderHome();
   if (view === 'slides') renderSlide();
+  if (view === 'extra-practice') renderExtraPractice();
+  if (view === 'endless') renderEndlessPractice();
   if (view === 'rules') renderRules();
   if (view === 'practice') renderPractice();
   if (view === 'practice-feedback') renderPracticeFeedback();
@@ -98,6 +107,54 @@ function renderShell(content) {
       ${content}
     </main>
   `;
+}
+
+function renderPracticeShell(content) {
+  app.innerHTML = `
+    <main class="shell practice-shell">
+      ${content}
+    </main>
+  `;
+}
+
+function renderHome() {
+  renderShell(`
+    <section class="screen-panel home-panel">
+      <div>
+        <p class="kicker">Start</p>
+        <h2>Kies je route</h2>
+      </div>
+      <div class="start-choice-grid">
+        <button class="choice-card" type="button" data-action="start-lesson">
+          <span>Knop 1</span>
+          <strong>Oefenen in de les</strong>
+        </button>
+        <button class="choice-card choice-card-yellow" type="button" data-action="extra-practice">
+          <span>Knop 2</span>
+          <strong>Extra oefenen en voorbereiden voor de toets</strong>
+        </button>
+      </div>
+    </section>
+  `);
+}
+
+function renderExtraPractice() {
+  renderShell(`
+    <section class="screen-panel exercise-menu-panel">
+      <div>
+        <p class="kicker">Extra oefenen</p>
+        <h2>Kies een oefening</h2>
+      </div>
+      <div class="exercise-choice-list">
+        <button class="exercise-card" type="button" data-action="start-endless">
+          <span>Oefening 1</span>
+          <strong>Oneindig omrekenen</strong>
+          <small>L, dL, cL, mL, cm3 en dm3 door elkaar.</small>
+        </button>
+      </div>
+      <button class="icon-button wide" type="button" data-action="home">Terug naar startscherm</button>
+    </section>
+  `);
 }
 
 function renderSlide() {
@@ -192,19 +249,19 @@ function renderPuzzleClues(title, clues) {
 }
 
 function renderPuzzleGrid() {
-  const starts = new Map([
-    [0, 'a'], [4, 'b'], [8, 'c'], [12, 'd'], [16, 'e'], [20, 'f'], [24, 'g'], [28, 'h'],
-    [32, 'i'], [36, 'j'], [40, 'k'], [44, 'l'], [48, 'm'], [52, 'n'], [56, 'o'], [60, 'p']
-  ]);
+  const cells = NUMBER_PUZZLE.solutionRows.flatMap((row) => row.split(''));
 
   return `
-    <div class="puzzle-grid" style="--puzzle-size: ${NUMBER_PUZZLE.size}" aria-label="Rekenkruiswoord puzzel">
-      ${puzzleValues
+    <div class="puzzle-grid" style="--puzzle-cols: ${NUMBER_PUZZLE.cols}" aria-label="Rekenkruiswoord puzzel">
+      ${cells
         .map(
-          (value, index) => `
+          (cell, index) =>
+            cell === '#'
+              ? '<div class="puzzle-cell puzzle-cell-block" aria-hidden="true"></div>'
+              : `
             <label class="puzzle-cell">
-              ${starts.has(index) ? `<span>${starts.get(index)}</span>` : ''}
-              <input data-puzzle-index="${index}" value="${value}" inputmode="numeric" maxlength="1" aria-label="Puzzelvak ${index + 1}" />
+              ${NUMBER_PUZZLE.starts[index] ? `<span>${NUMBER_PUZZLE.starts[index]}</span>` : ''}
+              <input data-puzzle-index="${index}" value="${puzzleValues[index]}" inputmode="numeric" maxlength="1" aria-label="Puzzelvak ${index + 1}" />
             </label>
           `
         )
@@ -351,6 +408,20 @@ function renderPractice() {
   focusAnswer();
 }
 
+function renderEndlessPractice() {
+  activeQuestion = makeEndlessQuestion(endlessQuestionIndex);
+  renderPracticeShell(`
+    <section class="game-layout endless-mode">
+      ${renderEndlessScorebar()}
+      <figure class="schema-strip">
+        <img src="${schemaFullImage}" alt="Omrekenschema L dL cL mL" />
+      </figure>
+      ${renderQuestionCard(activeQuestion, 'Controleer', renderEndlessFeedback())}
+    </section>
+  `);
+  focusAnswer();
+}
+
 function renderPracticeFeedback() {
   const passed = practiceState.readyForFinal;
   const restart = practiceState.shouldRestart;
@@ -450,10 +521,37 @@ function renderMiniScore(state) {
   return `<div class="mini-score"><span>Goed: ${state.correct}</span><span>Fout: ${state.wrong}</span></div>`;
 }
 
-function renderQuestionCard(question, buttonLabel) {
+function renderEndlessScorebar() {
+  const progress = Math.min(100, ((endlessState.played % 20) / 20) * 100);
+
+  return `
+    <section class="scorebar endless-scorebar">
+      <button class="back-link-button" type="button" data-action="home">Terug</button>
+      <span>Vraag ${endlessState.played + 1}</span>
+      <div class="progress"><span style="width: ${progress}%"></span></div>
+      <span>Goed: ${endlessState.correct}</span>
+      <span>Fout: ${endlessState.wrong}</span>
+      <span>Totaal: ${endlessState.played}</span>
+      <span>Record: ${endlessState.bestStreak}</span>
+    </section>
+  `;
+}
+
+function renderEndlessFeedback() {
+  if (!lastEndlessResult) return '';
+
+  const text = lastEndlessResult.correct
+    ? `Goed. Reeks: ${endlessState.correctStreak}`
+    : `Fout. Het juiste antwoord was ${formatNumber(lastEndlessResult.answer)} ${lastEndlessResult.to}.`;
+
+  return `<p class="answer-feedback ${lastEndlessResult.correct ? 'is-correct' : 'is-wrong'}">${text}</p>`;
+}
+
+function renderQuestionCard(question, buttonLabel, extraContent = '') {
   return `
     <form class="question-card" data-action="answer">
       <p class="kicker">Reken om</p>
+      ${extraContent}
       <label for="answer">${question.prompt}</label>
       <div class="answer-row">
         <input id="answer" name="answer" inputmode="decimal" autocomplete="off" placeholder="..." />
@@ -465,13 +563,17 @@ function renderQuestionCard(question, buttonLabel) {
 }
 
 function getHeaderTitle() {
+  if (view === 'home') return 'Startscherm';
   if (view === 'slides') return 'Lespresentatie';
+  if (view === 'extra-practice' || view === 'endless') return 'Extra oefenen';
   if (view.includes('final')) return 'Finale ronde';
   if (view === 'win') return 'Winscherm';
   return 'Exit ticket';
 }
 
 function getStageLabel() {
+  if (view === 'home') return 'Start';
+  if (view === 'extra-practice' || view === 'endless') return 'Extra';
   if (view === 'slides') return `${slideIndex + 1}/${slides.length}`;
   if (view.includes('final')) return 'Finale';
   if (view === 'win') return 'Gewonnen';
@@ -527,6 +629,14 @@ function submitAnswer(form) {
   const correct = checkAnswer(answer, activeQuestion.answer);
   lastResult = { ...activeQuestion, correct };
 
+  if (view === 'endless') {
+    lastEndlessResult = { ...activeQuestion, correct };
+    endlessState = resolveEndlessPracticeAnswer(endlessState, correct);
+    endlessQuestionIndex += 1;
+    render();
+    return;
+  }
+
   if (view === 'practice') {
     practiceState = resolvePracticeAnswer(practiceState, correct);
     view = 'practice-feedback';
@@ -554,6 +664,21 @@ function resetForTeacher() {
   render();
 }
 
+function startLesson() {
+  locked = false;
+  view = 'slides';
+  slideIndex = 0;
+  render();
+}
+
+function startEndlessPractice() {
+  endlessState = createEndlessPracticeState();
+  endlessQuestionIndex = 0;
+  lastEndlessResult = null;
+  view = 'endless';
+  render();
+}
+
 function animateIn() {
   gsap.fromTo(
     '.shell',
@@ -575,6 +700,19 @@ app.addEventListener('click', (event) => {
   const action = button.dataset.action;
   if (!action) return;
 
+  if (action === 'home') {
+    locked = false;
+    view = 'home';
+  }
+  if (action === 'start-lesson') {
+    startLesson();
+    return;
+  }
+  if (action === 'extra-practice') view = 'extra-practice';
+  if (action === 'start-endless') {
+    startEndlessPractice();
+    return;
+  }
   if (action === 'prev') slideIndex = Math.max(0, slideIndex - 1);
   if (action === 'next') slideIndex = Math.min(slides.length - 1, slideIndex + 1);
   if (action === 'jump-first-series') slideIndex = 0;
@@ -614,10 +752,18 @@ app.addEventListener('input', (event) => {
   puzzleValues[index] = input.value;
 
   if (input.value) {
-    const nextInput = document.querySelector(`[data-puzzle-index="${index + 1}"]`);
+    const nextInput = document.querySelector(`[data-puzzle-index="${getNextPuzzleInputIndex(index)}"]`);
     nextInput?.focus();
   }
 });
+
+function getNextPuzzleInputIndex(index) {
+  const cells = NUMBER_PUZZLE.solutionRows.flatMap((row) => row.split(''));
+  for (let nextIndex = index + 1; nextIndex < cells.length; nextIndex += 1) {
+    if (cells[nextIndex] !== '#') return nextIndex;
+  }
+  return index;
+}
 
 function checkPuzzle() {
   const result = checkNumberPuzzle(puzzleValues);

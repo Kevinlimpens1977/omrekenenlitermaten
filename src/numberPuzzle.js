@@ -1,50 +1,62 @@
 export const NUMBER_PUZZLE = {
-  size: 8,
-  solutionRows: ['22531444', '49045164', '96125007', '90928730', '49157301', '10008105', '36961491', '99333136'],
+  rows: 7,
+  cols: 8,
+  solutionRows: ['225#9811', '8#110##3', '28#0#622', '#10000##', '2##0###9', '8#304##6', '826#9951'],
+  starts: {
+    0: 'a',
+    2: 'b',
+    4: 'c',
+    7: 'd',
+    10: 'e',
+    11: 'f',
+    16: 'g',
+    17: 'h',
+    21: 'i',
+    25: 'j',
+    32: 'k',
+    39: 'l',
+    42: 'm',
+    44: 'n',
+    48: 'o',
+    53: 'p'
+  },
   horizontal: [
-    ['a', '2200 + 53', '2253'],
-    ['b', '1200 + 244', '1444'],
-    ['c', '5000 - 96', '4904'],
-    ['d', '5100 + 64', '5164'],
-    ['e', '9600 + 12', '9612'],
-    ['f', '5000 + 7', '5007'],
-    ['g', '9000 + 92', '9092'],
-    ['h', '8000 + 730', '8730'],
-    ['i', '4900 + 15', '4915'],
-    ['j', '7000 + 301', '7301'],
-    ['k', '10 x 10 x 10', '1000'],
-    ['l', '8000 + 105', '8105'],
-    ['m', '3600 + 96', '3696'],
-    ['n', '9000 + 614', '9614'],
-    ['o', '9900 + 33', '9933'],
-    ['p', '3100 + 36', '3136']
+    ['a', 'kwadraat van 15', '225'],
+    ['c', '9<sup>2</sup> + 30<sup>2</sup>', '981'],
+    ['e', '10<sup>2</sup> + 10', '110'],
+    ['g', '5<sup>2</sup> + 3', '28'],
+    ['i', '3<sup>2</sup> x 3 + 7 x 5', '62'],
+    ['j', '100<sup>2</sup>', '10000'],
+    ['m', '8<sup>2</sup> + 16<sup>2</sup> - 4<sup>2</sup>', '304'],
+    ['o', '27<sup>2</sup> + 101 - 2<sup>2</sup>', '826'],
+    ['p', '32<sup>2</sup> - (8<sup>2</sup> + 9)', '951']
   ],
   vertical: [
-    ['a', '2000 + 499', '2499'],
-    ['b', '3000 - 40', '2960'],
-    ['c', '5000 + 99', '5099'],
-    ['d', '3000 + 422', '3422'],
-    ['e', '1500 + 58', '1558'],
-    ['f', '4000 + 107', '4107'],
-    ['g', '4600 + 3', '4603'],
-    ['h', '4000 + 470', '4470'],
-    ['i', '4000 + 139', '4139'],
-    ['j', '9900 + 9', '9909'],
-    ['k', '1000 + 99', '1099'],
-    ['l', '5800 + 13', '5813'],
-    ['m', '7800 + 13', '7813'],
-    ['n', '3000 + 13', '3013']
+    ['a', '16<sup>2</sup> + 25 + 1<sup>2</sup>', '282'],
+    ['b', '7<sup>2</sup> + 2', '51'],
+    ['c', '9<sup>2</sup> + 3<sup>2</sup>', '90'],
+    ['d', '125 + 7', '132'],
+    ['f', '10<sup>2</sup> x 10<sup>2</sup>', '10000'],
+    ['h', 'negen kwadraat', '81'],
+    ['i', '8<sup>2</sup> - 2<sup>2</sup>', '60'],
+    ['k', '(13 - 1)<sup>2</sup> + 144', '288'],
+    ['l', '31<sup>2</sup>', '961'],
+    ['m', 'kwadraat van 6', '36'],
+    ['n', 'kwadraat van zeven', '49']
   ]
 };
 
 export function checkNumberPuzzle(values, puzzle = NUMBER_PUZZLE) {
   const solution = puzzle.solutionRows.flatMap((row) => row.split(''));
-  const checked = solution.map((digit, index) => String(values[index] ?? '').trim() === digit);
+  const checked = solution.map((digit, index) => digit === '#' || String(values[index] ?? '').trim() === digit);
   const complete = checked.every(Boolean);
 
   return {
     complete,
     checked,
-    clearedValues: solution.map((digit, index) => (checked[index] ? digit : ''))
+    clearedValues: solution.map((digit, index) => {
+      if (digit === '#') return '';
+      return checked[index] ? digit : '';
+    })
   };
 }

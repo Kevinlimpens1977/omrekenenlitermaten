@@ -86,6 +86,29 @@ export function resolveFinalAnswer(state, isCorrect) {
   };
 }
 
+export function createEndlessPracticeState() {
+  return {
+    played: 0,
+    correct: 0,
+    wrong: 0,
+    correctStreak: 0,
+    bestStreak: 0
+  };
+}
+
+export function resolveEndlessPracticeAnswer(state, isCorrect) {
+  const correctStreak = isCorrect ? state.correctStreak + 1 : 0;
+
+  return {
+    ...state,
+    played: state.played + 1,
+    correct: state.correct + (isCorrect ? 1 : 0),
+    wrong: state.wrong + (isCorrect ? 0 : 1),
+    correctStreak,
+    bestStreak: Math.max(state.bestStreak, correctStreak)
+  };
+}
+
 export const QUESTION_BANK = [
   { value: 4.2, from: 'L', to: 'mL' },
   { value: 750, from: 'mL', to: 'dL' },
@@ -109,6 +132,31 @@ export const QUESTION_BANK = [
   { value: 0.45, from: 'L', to: 'cL' }
 ];
 
+export const ENDLESS_QUESTION_BANK = [
+  { value: 1250, from: 'cm3', to: 'dm3' },
+  { value: 3.4, from: 'dm3', to: 'mL' },
+  { value: 2.75, from: 'L', to: 'mL' },
+  { value: 860, from: 'cm3', to: 'cL' },
+  { value: 750, from: 'mL', to: 'dL' },
+  { value: 4.2, from: 'L', to: 'cL' },
+  { value: 65, from: 'cL', to: 'mL' },
+  { value: 1.8, from: 'dm3', to: 'dL' },
+  { value: 540, from: 'mL', to: 'cL' },
+  { value: 0.9, from: 'L', to: 'dm3' },
+  { value: 2300, from: 'cm3', to: 'L' },
+  { value: 12, from: 'dL', to: 'L' },
+  { value: 7.5, from: 'cL', to: 'mL' },
+  { value: 0.36, from: 'L', to: 'cL' },
+  { value: 480, from: 'cm3', to: 'mL' },
+  { value: 5.6, from: 'dL', to: 'mL' },
+  { value: 2.25, from: 'dm3', to: 'cL' },
+  { value: 980, from: 'mL', to: 'L' },
+  { value: 34, from: 'cL', to: 'dL' },
+  { value: 1.2, from: 'L', to: 'mL' },
+  { value: 150, from: 'mL', to: 'cm3' },
+  { value: 0.75, from: 'dm3', to: 'L' }
+];
+
 export function makeQuestion(seedIndex, options = {}) {
   const bank = options.bank ?? QUESTION_BANK;
   const item = bank[seedIndex % bank.length];
@@ -123,6 +171,10 @@ export function makeQuestion(seedIndex, options = {}) {
 
 export function makeQuestionSet(count, offset = 0) {
   return Array.from({ length: count }, (_, index) => makeQuestion(index + offset));
+}
+
+export function makeEndlessQuestion(seedIndex) {
+  return makeQuestion(seedIndex, { bank: ENDLESS_QUESTION_BANK });
 }
 
 export function formatNumber(value) {
