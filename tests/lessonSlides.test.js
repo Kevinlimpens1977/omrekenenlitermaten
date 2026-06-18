@@ -61,11 +61,15 @@ describe('lesson slides', () => {
     expect(selfPracticeSlide.supportAlt).toBe('Omrekenschema L dL cL mL');
   });
 
-  it('adds an empty slide 19 as the start of the next lesson series', () => {
+  it('adds a number puzzle on slide 19 and an empty slide 20', () => {
     const slides = buildLessonSlides(images);
 
-    expect(slides).toHaveLength(19);
+    expect(slides).toHaveLength(20);
     expect(slides[18]).toMatchObject({
+      variant: 'number-puzzle',
+      title: 'Rekenkruiswoord'
+    });
+    expect(slides[19]).toMatchObject({
       variant: 'blank-next-series',
       title: '',
       body: ''

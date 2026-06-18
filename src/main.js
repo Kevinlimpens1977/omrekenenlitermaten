@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import './styles.css';
 import { buildLessonSlides } from './lessonSlides.js';
 import { mountLiterDm3Scene } from './literDm3Scene.js';
+import { checkNumberPuzzle, NUMBER_PUZZLE } from './numberPuzzle.js';
 import {
   checkAnswer,
   createFinalState,
@@ -65,6 +66,9 @@ let activeQuestion = null;
 let lastResult = null;
 let locked = false;
 let activeSlideScene = null;
+let puzzleValues = Array(NUMBER_PUZZLE.size * NUMBER_PUZZLE.size).fill('');
+let puzzleSolved = false;
+let puzzleScratchpad = '';
 
 function render() {
   cleanupSlideScene();
@@ -106,6 +110,10 @@ function renderSlide() {
     renderBlankNextSeriesSlide();
     return;
   }
+  if (slide.variant === 'number-puzzle') {
+    renderNumberPuzzleSlide(slide);
+    return;
+  }
 
   renderShell(`
     <section class="${slide.variant === 'prefixes' ? 'prefix-slide' : 'lesson-grid'} screen-panel">
@@ -133,6 +141,76 @@ function renderBlankNextSeriesSlide() {
     <section class="screen-panel blank-slide" aria-label="Lege dia 19"></section>
     ${renderSlideControls()}
   `);
+}
+
+function renderNumberPuzzleSlide(slide) {
+  if (puzzleSolved) {
+    renderShell(`
+      <section class="screen-panel puzzle-win-panel">
+        <p class="kicker">Puzzel opgelost</p>
+        <h2>Alles klopt.</h2>
+        <p>Mooi gerekend. Je mag door naar dia 20.</p>
+        <button class="primary-button wide" type="button" data-action="next">Verder naar dia 20</button>
+      </section>
+    `);
+    return;
+  }
+
+  renderShell(`
+    <section class="screen-panel number-puzzle-slide">
+      <div class="puzzle-clues">
+        <p class="kicker">${slide.kicker}</p>
+        <h2>${slide.title}</h2>
+        <p>${slide.body}</p>
+        <div class="puzzle-clue-columns">
+          ${renderPuzzleClues('Horizontaal', NUMBER_PUZZLE.horizontal)}
+          ${renderPuzzleClues('Verticaal', NUMBER_PUZZLE.vertical)}
+        </div>
+      </div>
+      <div class="puzzle-workspace">
+        ${renderPuzzleGrid()}
+        <label class="scratchpad-label" for="scratchpad">Kladblaadje</label>
+        <textarea id="scratchpad" class="scratchpad" spellcheck="false" aria-label="Kladblaadje voor berekeningen">${puzzleScratchpad}</textarea>
+        <button class="primary-button wide" type="button" data-action="check-puzzle">Kijk na</button>
+      </div>
+    </section>
+    ${renderSlideControls()}
+  `);
+
+  gsap.fromTo('.puzzle-cell', { scale: 0.92, autoAlpha: 0 }, { scale: 1, autoAlpha: 1, duration: 0.28, stagger: 0.006, ease: 'back.out(1.8)' });
+}
+
+function renderPuzzleClues(title, clues) {
+  return `
+    <section class="puzzle-clue-list" aria-label="${title}">
+      <h3>${title}</h3>
+      ${clues
+        .map(([letter, clue]) => `<p><strong>${letter}</strong><span>${clue}</span></p>`)
+        .join('')}
+    </section>
+  `;
+}
+
+function renderPuzzleGrid() {
+  const starts = new Map([
+    [0, 'a'], [4, 'b'], [8, 'c'], [12, 'd'], [16, 'e'], [20, 'f'], [24, 'g'], [28, 'h'],
+    [32, 'i'], [36, 'j'], [40, 'k'], [44, 'l'], [48, 'm'], [52, 'n'], [56, 'o'], [60, 'p']
+  ]);
+
+  return `
+    <div class="puzzle-grid" style="--puzzle-size: ${NUMBER_PUZZLE.size}" aria-label="Rekenkruiswoord puzzel">
+      ${puzzleValues
+        .map(
+          (value, index) => `
+            <label class="puzzle-cell">
+              ${starts.has(index) ? `<span>${starts.get(index)}</span>` : ''}
+              <input data-puzzle-index="${index}" value="${value}" inputmode="numeric" maxlength="1" aria-label="Puzzelvak ${index + 1}" />
+            </label>
+          `
+        )
+        .join('')}
+    </div>
+  `;
 }
 
 function renderLiterDm3Slide(slide) {
@@ -191,13 +269,14 @@ function renderSlideControls() {
   const isFirstSlide = slideIndex === 0;
   const isFirstLessonEnd = slideIndex === FIRST_LESSON_SLIDE_COUNT - 1;
   const isLastSlide = slideIndex === slides.length - 1;
+  const isLockedPuzzle = slides[slideIndex]?.variant === 'number-puzzle' && !puzzleSolved;
 
   return `
     <nav class="controls" aria-label="Presentatieknoppen">
       <button class="icon-button" type="button" data-action="prev" ${isFirstSlide ? 'disabled' : ''} title="Terug">
         <span aria-hidden="true">←</span><span>Terug</span>
       </button>
-      <button class="primary-button" type="button" data-action="${isFirstLessonEnd ? 'rules' : 'next'}" ${isLastSlide ? 'disabled' : ''}>
+      <button class="primary-button" type="button" data-action="${isFirstLessonEnd ? 'rules' : 'next'}" ${isLastSlide || isLockedPuzzle ? 'disabled' : ''}>
         <span>${isFirstLessonEnd ? 'Exit ticket' : 'Verder'}</span><span aria-hidden="true">→</span>
       </button>
     </nav>
@@ -406,7 +485,7 @@ function renderStageNavigation() {
 
   const inNextSeries = slideIndex >= NEXT_SERIES_START_INDEX;
   const yellowLabel = inNextSeries ? `1/${FIRST_LESSON_SLIDE_COUNT}` : `${slideIndex + 1}/${FIRST_LESSON_SLIDE_COUNT}`;
-  const greenLabel = `${NEXT_SERIES_START_INDEX + 1}/${slides.length}`;
+  const greenLabel = inNextSeries ? `${slideIndex + 1}/${slides.length}` : `${NEXT_SERIES_START_INDEX + 1}/${slides.length}`;
 
   return `
     <div class="stage-nav" aria-label="Diareeksen">
@@ -500,6 +579,7 @@ app.addEventListener('click', (event) => {
   if (action === 'next') slideIndex = Math.min(slides.length - 1, slideIndex + 1);
   if (action === 'jump-first-series') slideIndex = 0;
   if (action === 'jump-next-series') slideIndex = NEXT_SERIES_START_INDEX;
+  if (action === 'check-puzzle') checkPuzzle();
   if (action === 'rules') view = 'rules';
   if (action === 'start-practice') restartPractice();
   if (action === 'restart-practice') restartPractice();
@@ -519,6 +599,38 @@ app.addEventListener('submit', (event) => {
   if (locked) return;
   submitAnswer(event.target);
 });
+
+app.addEventListener('input', (event) => {
+  if (event.target.matches('.scratchpad')) {
+    puzzleScratchpad = event.target.value;
+    return;
+  }
+
+  const input = event.target.closest('[data-puzzle-index]');
+  if (!input || locked) return;
+
+  input.value = input.value.replace(/\D/g, '').slice(-1);
+  const index = Number(input.dataset.puzzleIndex);
+  puzzleValues[index] = input.value;
+
+  if (input.value) {
+    const nextInput = document.querySelector(`[data-puzzle-index="${index + 1}"]`);
+    nextInput?.focus();
+  }
+});
+
+function checkPuzzle() {
+  const result = checkNumberPuzzle(puzzleValues);
+  puzzleValues = result.clearedValues;
+  puzzleSolved = result.complete;
+  render();
+
+  if (puzzleSolved) {
+    gsap.fromTo('.puzzle-win-panel', { scale: 0.96 }, { scale: 1, duration: 0.35, ease: 'back.out(1.7)' });
+  } else {
+    gsap.fromTo('.puzzle-cell input[value=""]', { backgroundColor: '#ffe9e6' }, { backgroundColor: '#ffffff', duration: 0.7, ease: 'power2.out' });
+  }
+}
 
 window.addEventListener(
   'keydown',

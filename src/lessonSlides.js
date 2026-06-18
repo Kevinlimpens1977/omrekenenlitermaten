@@ -117,6 +117,12 @@ export function buildLessonSlides(images) {
       body: 'Nu laat je zien dat je het ook zonder hulp steeds beter kunt.'
     },
     {
+      kicker: 'Puzzel',
+      title: 'Rekenkruiswoord',
+      body: 'Reken de sommen uit en vul de cijfers horizontaal en verticaal in.',
+      variant: 'number-puzzle'
+    },
+    {
       kicker: '',
       title: '',
       body: '',

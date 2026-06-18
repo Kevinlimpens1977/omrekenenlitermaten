@@ -190,6 +190,131 @@ p {
   min-height: 560px;
 }
 
+.number-puzzle-slide {
+  display: grid;
+  grid-template-columns: minmax(410px, 1fr) minmax(340px, 0.78fr);
+  gap: 18px;
+  align-items: start;
+  padding-block: 24px;
+}
+
+.number-puzzle-slide h2 {
+  margin-bottom: 8px;
+  font-size: clamp(2rem, 3.6vw, 3.1rem);
+}
+
+.number-puzzle-slide .puzzle-clues > p {
+  margin-bottom: 18px;
+  font-size: clamp(1rem, 1.45vw, 1.15rem);
+}
+
+.puzzle-clue-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.puzzle-clue-list h3 {
+  margin: 0 0 8px;
+  color: #e0483e;
+  font-size: 1.02rem;
+}
+
+.puzzle-clue-list p {
+  margin: 0 0 4px;
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  gap: 7px;
+  color: #123141;
+  font-size: 0.9rem;
+  line-height: 1.2;
+}
+
+.puzzle-clue-list strong {
+  color: #d91d6a;
+}
+
+.puzzle-workspace {
+  display: grid;
+  gap: 12px;
+}
+
+.puzzle-grid {
+  width: min(100%, 340px);
+  aspect-ratio: 1;
+  justify-self: center;
+  display: grid;
+  grid-template-columns: repeat(var(--puzzle-size), 1fr);
+  border: 2px solid rgba(18, 49, 65, 0.5);
+  background: #123141;
+}
+
+.puzzle-cell {
+  position: relative;
+  min-width: 0;
+  border: 1px solid rgba(18, 49, 65, 0.44);
+  background: #e4f5f8;
+}
+
+.puzzle-cell span {
+  position: absolute;
+  left: 4px;
+  top: 2px;
+  z-index: 1;
+  color: #d91d6a;
+  font-size: 0.72rem;
+  font-weight: 950;
+}
+
+.puzzle-cell input {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  padding: 12px 4px 4px;
+  background: #e4f5f8;
+  color: #123141;
+  font-size: clamp(1.15rem, 2.6vw, 1.7rem);
+  font-weight: 950;
+  text-align: center;
+}
+
+.puzzle-cell input:focus {
+  outline: 3px solid #2f9fbe;
+  outline-offset: -3px;
+  background: #fff;
+}
+
+.scratchpad-label {
+  color: #4f6b72;
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.scratchpad {
+  min-height: 70px;
+  resize: vertical;
+  border: 2px solid rgba(18, 49, 65, 0.14);
+  border-radius: 8px;
+  padding: 12px;
+  background:
+    linear-gradient(rgba(18, 49, 65, 0.06) 1px, transparent 1px),
+    #fff;
+  background-size: 100% 24px;
+  color: #123141;
+  font-weight: 750;
+}
+
+.puzzle-win-panel {
+  max-width: 860px;
+  width: 100%;
+  margin: auto;
+  display: grid;
+  gap: 22px;
+  border: 8px solid #19a96b;
+  text-align: center;
+}
+
 .image-frame {
   margin: 0;
   min-height: 360px;
