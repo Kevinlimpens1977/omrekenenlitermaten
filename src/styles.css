@@ -121,12 +121,42 @@ p {
 
 .stage-pill {
   min-width: 96px;
+  min-height: 44px;
+  border: 0;
   padding: 10px 14px;
   border-radius: 8px;
   background: #ffe16a;
   color: #123141;
   text-align: center;
   font-weight: 900;
+}
+
+.stage-nav {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.stage-nav .stage-pill {
+  cursor: pointer;
+}
+
+.stage-pill-yellow {
+  background: #ffe16a;
+}
+
+.stage-pill-green {
+  background: #dff6e9;
+  color: #0a6f43;
+}
+
+.stage-nav .stage-pill:not(.is-active) {
+  opacity: 0.78;
+}
+
+.stage-pill.is-active {
+  box-shadow: 0 0 0 3px rgba(18, 49, 65, 0.08);
 }
 
 .lesson-grid {
@@ -154,6 +184,10 @@ p {
   min-height: 0;
   padding: clamp(18px, 4vw, 38px);
   border-radius: 8px;
+}
+
+.blank-slide {
+  min-height: 560px;
 }
 
 .image-frame {

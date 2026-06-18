@@ -28,7 +28,7 @@ describe('lesson slides', () => {
     expect(titles).toContain('Voorvoegsels');
     expect(titles.indexOf('Voorvoegsels')).toBe(titles.indexOf('De plekken') + 1);
     expect(titles.indexOf('Naar rechts')).toBe(titles.indexOf('Voorvoegsels') + 1);
-    expect(slides).toHaveLength(18);
+    expect(slides.slice(0, 18)).toHaveLength(18);
   });
 
   it('explains deci, centi and milli as parts of one liter', () => {
@@ -59,5 +59,16 @@ describe('lesson slides', () => {
 
     expect(selfPracticeSlide.supportImage).toBe(images.schemaFullImage);
     expect(selfPracticeSlide.supportAlt).toBe('Omrekenschema L dL cL mL');
+  });
+
+  it('adds an empty slide 19 as the start of the next lesson series', () => {
+    const slides = buildLessonSlides(images);
+
+    expect(slides).toHaveLength(19);
+    expect(slides[18]).toMatchObject({
+      variant: 'blank-next-series',
+      title: '',
+      body: ''
+    });
   });
 });

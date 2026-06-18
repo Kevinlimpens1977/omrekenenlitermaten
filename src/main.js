@@ -33,6 +33,8 @@ import exampleTwoImage from '../voorbeeldvraag2.jpg';
 
 const app = document.querySelector('#app');
 const canvas = document.querySelector('#space-canvas');
+const FIRST_LESSON_SLIDE_COUNT = 18;
+const NEXT_SERIES_START_INDEX = FIRST_LESSON_SLIDE_COUNT;
 
 const slides = buildLessonSlides({
   titleImage,
@@ -87,7 +89,7 @@ function renderShell(content) {
           <p class="eyebrow">Omrekenen</p>
           <h1>${getHeaderTitle()}</h1>
         </div>
-        <div class="stage-pill">${getStageLabel()}</div>
+        ${renderStageNavigation()}
       </header>
       ${content}
     </main>
@@ -98,6 +100,10 @@ function renderSlide() {
   const slide = slides[slideIndex];
   if (slide.variant === 'liter-dm3') {
     renderLiterDm3Slide(slide);
+    return;
+  }
+  if (slide.variant === 'blank-next-series') {
+    renderBlankNextSeriesSlide();
     return;
   }
 
@@ -113,19 +119,19 @@ function renderSlide() {
         <p>${slide.body}</p>
         ${slide.variant === 'prefixes' ? renderPrefixBoard(slide) : ''}
         <div class="progress">
-          <span style="width: ${((slideIndex + 1) / slides.length) * 100}%"></span>
+          <span style="width: ${getSlideProgressPercent()}%"></span>
         </div>
-        <p class="progress-text">Dia ${slideIndex + 1} van ${slides.length}</p>
+        <p class="progress-text">${getSlideProgressText()}</p>
       </article>
     </section>
-    <nav class="controls" aria-label="Presentatieknoppen">
-      <button class="icon-button" type="button" data-action="prev" ${slideIndex === 0 ? 'disabled' : ''} title="Terug">
-        <span aria-hidden="true">←</span><span>Terug</span>
-      </button>
-      <button class="primary-button" type="button" data-action="${slideIndex === slides.length - 1 ? 'rules' : 'next'}">
-        <span>${slideIndex === slides.length - 1 ? 'Exit ticket' : 'Verder'}</span><span aria-hidden="true">→</span>
-      </button>
-    </nav>
+    ${renderSlideControls()}
+  `);
+}
+
+function renderBlankNextSeriesSlide() {
+  renderShell(`
+    <section class="screen-panel blank-slide" aria-label="Lege dia 19"></section>
+    ${renderSlideControls()}
   `);
 }
 
@@ -160,9 +166,9 @@ function renderLiterDm3Slide(slide) {
           </button>
         </div>
         <div class="progress">
-          <span style="width: ${((slideIndex + 1) / slides.length) * 100}%"></span>
+          <span style="width: ${getSlideProgressPercent()}%"></span>
         </div>
-        <p class="progress-text">Dia ${slideIndex + 1} van ${slides.length}</p>
+        <p class="progress-text">${getSlideProgressText()}</p>
       </div>
       <div class="liter-dm3-scene" data-liter-dm3-root>
         <canvas data-liter-dm3-canvas aria-label="3D animatie van 1 liter water dat in een kubus van 1 dm3 wordt gegoten"></canvas>
@@ -182,13 +188,17 @@ function renderLiterDm3Slide(slide) {
 }
 
 function renderSlideControls() {
+  const isFirstSlide = slideIndex === 0;
+  const isFirstLessonEnd = slideIndex === FIRST_LESSON_SLIDE_COUNT - 1;
+  const isLastSlide = slideIndex === slides.length - 1;
+
   return `
     <nav class="controls" aria-label="Presentatieknoppen">
-      <button class="icon-button" type="button" data-action="prev" ${slideIndex === 0 ? 'disabled' : ''} title="Terug">
+      <button class="icon-button" type="button" data-action="prev" ${isFirstSlide ? 'disabled' : ''} title="Terug">
         <span aria-hidden="true">←</span><span>Terug</span>
       </button>
-      <button class="primary-button" type="button" data-action="${slideIndex === slides.length - 1 ? 'rules' : 'next'}">
-        <span>${slideIndex === slides.length - 1 ? 'Exit ticket' : 'Verder'}</span><span aria-hidden="true">→</span>
+      <button class="primary-button" type="button" data-action="${isFirstLessonEnd ? 'rules' : 'next'}" ${isLastSlide ? 'disabled' : ''}>
+        <span>${isFirstLessonEnd ? 'Exit ticket' : 'Verder'}</span><span aria-hidden="true">→</span>
       </button>
     </nav>
   `;
@@ -328,7 +338,7 @@ function renderWin() {
       <h2>Gefeliciteerd!</h2>
       <p>Je hebt 10 omrekeningen op een rij goed gemaakt.</p>
       <strong>Laat je docent zien dat je gewonnen hebt.</strong>
-      <p class="teacher-note">Docent: ontgrendel met Shift + spatie.</p>
+      <p class="teacher-note">Docent: ontgrendel met Shift + spatie. Daarna ga je naar dia 19.</p>
     </section>
   `);
 }
@@ -389,6 +399,44 @@ function getStageLabel() {
   return 'Oefenen';
 }
 
+function renderStageNavigation() {
+  if (view !== 'slides') {
+    return `<div class="stage-pill">${getStageLabel()}</div>`;
+  }
+
+  const inNextSeries = slideIndex >= NEXT_SERIES_START_INDEX;
+  const yellowLabel = inNextSeries ? `1/${FIRST_LESSON_SLIDE_COUNT}` : `${slideIndex + 1}/${FIRST_LESSON_SLIDE_COUNT}`;
+  const greenLabel = `${NEXT_SERIES_START_INDEX + 1}/${slides.length}`;
+
+  return `
+    <div class="stage-nav" aria-label="Diareeksen">
+      <button class="stage-pill stage-pill-yellow ${inNextSeries ? '' : 'is-active'}" type="button" data-action="jump-first-series" aria-label="Ga naar dia 1">
+        ${yellowLabel}
+      </button>
+      <button class="stage-pill stage-pill-green ${inNextSeries ? 'is-active' : ''}" type="button" data-action="jump-next-series" aria-label="Ga naar dia 19">
+        ${greenLabel}
+      </button>
+    </div>
+  `;
+}
+
+function getSlideProgressPercent() {
+  if (slideIndex < NEXT_SERIES_START_INDEX) {
+    return ((slideIndex + 1) / FIRST_LESSON_SLIDE_COUNT) * 100;
+  }
+
+  const nextSeriesCount = Math.max(1, slides.length - NEXT_SERIES_START_INDEX);
+  return ((slideIndex - NEXT_SERIES_START_INDEX + 1) / nextSeriesCount) * 100;
+}
+
+function getSlideProgressText() {
+  if (slideIndex < NEXT_SERIES_START_INDEX) {
+    return `Dia ${slideIndex + 1} van ${FIRST_LESSON_SLIDE_COUNT}`;
+  }
+
+  return `Dia ${slideIndex + 1} van ${slides.length}`;
+}
+
 function getPracticeFeedbackText(passed, restart) {
   if (restart) return 'Je hebt meer dan 10 fouten. We oefenen ronde 1 opnieuw met het schema in beeld.';
   if (passed) return 'Je hebt minder dan 10 fouten. Je mag door naar de finale.';
@@ -420,7 +468,7 @@ function restartPractice() {
 
 function resetForTeacher() {
   locked = false;
-  slideIndex = 0;
+  slideIndex = NEXT_SERIES_START_INDEX;
   practiceState = createPracticeState(20);
   finalState = createFinalState();
   view = 'slides';
@@ -450,6 +498,8 @@ app.addEventListener('click', (event) => {
 
   if (action === 'prev') slideIndex = Math.max(0, slideIndex - 1);
   if (action === 'next') slideIndex = Math.min(slides.length - 1, slideIndex + 1);
+  if (action === 'jump-first-series') slideIndex = 0;
+  if (action === 'jump-next-series') slideIndex = NEXT_SERIES_START_INDEX;
   if (action === 'rules') view = 'rules';
   if (action === 'start-practice') restartPractice();
   if (action === 'restart-practice') restartPractice();
@@ -497,8 +547,8 @@ window.addEventListener(
       render();
     }
     if (event.key === 'ArrowRight') {
-      if (slideIndex === slides.length - 1) view = 'rules';
-      else slideIndex += 1;
+      if (slideIndex === FIRST_LESSON_SLIDE_COUNT - 1) view = 'rules';
+      else slideIndex = Math.min(slides.length - 1, slideIndex + 1);
       render();
     }
   },

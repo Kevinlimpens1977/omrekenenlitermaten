@@ -115,6 +115,12 @@ export function buildLessonSlides(images) {
       kicker: 'Samenvatting',
       title: 'Klaar voor de exit ticket',
       body: 'Nu laat je zien dat je het ook zonder hulp steeds beter kunt.'
+    },
+    {
+      kicker: '',
+      title: '',
+      body: '',
+      variant: 'blank-next-series'
     }
   ];
 }
