@@ -61,18 +61,26 @@ describe('lesson slides', () => {
     expect(selfPracticeSlide.supportAlt).toBe('Omrekenschema L dL cL mL');
   });
 
-  it('adds a number puzzle on slide 19 and an empty slide 20', () => {
+  it('adds the interactive slides after slide 18', () => {
     const slides = buildLessonSlides(images);
 
-    expect(slides).toHaveLength(20);
+    expect(slides).toHaveLength(22);
     expect(slides[18]).toMatchObject({
       variant: 'number-puzzle',
       title: 'Rekenkruiswoord'
     });
     expect(slides[19]).toMatchObject({
-      variant: 'blank-next-series',
-      title: '',
-      body: ''
+      variant: 'circle-table',
+      title: 'Cirkels A, B en C',
+      body: 'Rond af op 1 decimaal.'
+    });
+    expect(slides[20]).toMatchObject({
+      variant: 'paint-question',
+      title: 'Laatste vraag: verfblik'
+    });
+    expect(slides[21]).toMatchObject({
+      variant: 'flashcards',
+      title: 'Begrippen oefenen'
     });
   });
 });

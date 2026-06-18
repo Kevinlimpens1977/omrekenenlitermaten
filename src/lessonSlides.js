@@ -123,10 +123,22 @@ export function buildLessonSlides(images) {
       variant: 'number-puzzle'
     },
     {
-      kicker: '',
-      title: '',
-      body: '',
-      variant: 'blank-next-series'
+      kicker: 'Opgave',
+      title: 'Cirkels A, B en C',
+      body: 'Rond af op 1 decimaal.',
+      variant: 'circle-table'
+    },
+    {
+      kicker: 'Laatste vraag',
+      title: 'Laatste vraag: verfblik',
+      body: 'Laat met een berekening zien hoe je aan je antwoord komt.',
+      variant: 'paint-question'
+    },
+    {
+      kicker: 'Flashcards',
+      title: 'Begrippen oefenen',
+      body: 'Draai de kaart om en kies of je het wist.',
+      variant: 'flashcards'
     }
   ];
 }

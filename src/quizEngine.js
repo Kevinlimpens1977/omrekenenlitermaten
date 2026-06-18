@@ -188,3 +188,7 @@ export function isPracticeFinalShortcut(event, view) {
   const isPracticeView = view === 'practice' || view === 'practice-feedback';
   return isPracticeView && event.shiftKey && String(event.key).toLowerCase() === 'q';
 }
+
+export function isSlideDevModeShortcut(event, view) {
+  return view === 'slides' && event.shiftKey && String(event.key).toLowerCase() === 'q';
+}

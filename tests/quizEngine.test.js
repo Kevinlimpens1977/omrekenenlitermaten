@@ -7,6 +7,7 @@ import {
   createPracticeState,
   ENDLESS_QUESTION_BANK,
   formatNumber,
+  isSlideDevModeShortcut,
   isPracticeFinalShortcut,
   makeQuestion,
   makeEndlessQuestion,
@@ -128,6 +129,13 @@ describe('endless extra practice', () => {
 });
 
 describe('hidden shortcuts', () => {
+  it('recognizes shift-Q as a dev mode toggle while viewing slides', () => {
+    expect(isSlideDevModeShortcut({ shiftKey: true, key: 'Q' }, 'slides')).toBe(true);
+    expect(isSlideDevModeShortcut({ shiftKey: true, key: 'q' }, 'slides')).toBe(true);
+    expect(isSlideDevModeShortcut({ shiftKey: true, key: 'q' }, 'practice')).toBe(false);
+    expect(isSlideDevModeShortcut({ shiftKey: false, key: 'q' }, 'slides')).toBe(false);
+  });
+
   it('recognizes shift-Q only while practicing in round one', () => {
     expect(isPracticeFinalShortcut({ shiftKey: true, key: 'Q' }, 'practice')).toBe(true);
     expect(isPracticeFinalShortcut({ shiftKey: true, key: 'q' }, 'practice-feedback')).toBe(true);

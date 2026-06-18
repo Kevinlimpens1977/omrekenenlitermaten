@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 620" role="img" aria-labelledby="title desc">
+  <title id="title">Verfblik met diameter 12 cm en hoogte 20 cm</title>
+  <desc id="desc">Een cilindervormig verfblik met maatlijnen voor diameter en hoogte.</desc>
+  <defs>
+    <linearGradient id="can" x1="0" x2="1">
+      <stop offset="0" stop-color="#d8edf1"/>
+      <stop offset="0.48" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#c8e3e8"/>
+    </linearGradient>
+    <linearGradient id="paint" x1="0" x2="1">
+      <stop offset="0" stop-color="#176fb3"/>
+      <stop offset="1" stop-color="#2f9fbe"/>
+    </linearGradient>
+    <marker id="arrow" markerHeight="12" markerWidth="12" orient="auto" refX="8" refY="6">
+      <path d="M0 0 12 6 0 12z" fill="#123141"/>
+    </marker>
+  </defs>
+  <rect width="900" height="620" rx="44" fill="#eef7f8"/>
+  <path d="M115 520c96-58 185-45 294-66 116-22 205-76 325-44 45 12 78 34 103 61v85H115z" fill="#d8edf1"/>
+
+  <g transform="translate(250 104)">
+    <ellipse cx="200" cy="58" rx="150" ry="48" fill="#ffffff" stroke="#123141" stroke-width="9"/>
+    <path d="M50 58v330c0 27 67 48 150 48s150-21 150-48V58" fill="url(#can)" stroke="#123141" stroke-width="9"/>
+    <ellipse cx="200" cy="104" rx="123" ry="32" fill="url(#paint)" opacity="0.95"/>
+    <path d="M84 103c52 26 181 25 232 0" fill="none" stroke="#ffffff" stroke-width="8" opacity="0.68"/>
+    <ellipse cx="200" cy="388" rx="150" ry="48" fill="#ffffff" stroke="#123141" stroke-width="9"/>
+
+    <rect x="121" y="190" width="158" height="92" rx="14" fill="#ffe16a" stroke="#123141" stroke-width="6"/>
+    <text x="200" y="229" text-anchor="middle" fill="#123141" font-family="Inter, Arial, sans-serif" font-size="31" font-weight="900">VERF</text>
+    <text x="200" y="260" text-anchor="middle" fill="#0a6f43" font-family="Inter, Arial, sans-serif" font-size="22" font-weight="900">2 L?</text>
+  </g>
+
+  <g stroke="#123141" stroke-width="7" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M635 162v330" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+    <path d="M300 548h300" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+  </g>
+
+  <g font-family="Inter, Arial, sans-serif" font-weight="900" fill="#123141">
+    <rect x="658" y="290" width="122" height="58" rx="10" fill="#ffffff" stroke="#123141" stroke-width="4"/>
+    <text x="719" y="328" text-anchor="middle" font-size="28">20 cm</text>
+    <rect x="379" y="552" width="142" height="58" rx="10" fill="#ffffff" stroke="#123141" stroke-width="4"/>
+    <text x="450" y="590" text-anchor="middle" font-size="28">12 cm</text>
+  </g>
+</svg>

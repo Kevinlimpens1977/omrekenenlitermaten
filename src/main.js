@@ -1,9 +1,23 @@
 import { gsap } from 'gsap';
 import * as THREE from 'three';
 import './styles.css';
+import { calculateNextState, formatCalculatorDisplay } from './calculator.js';
 import { buildLessonSlides } from './lessonSlides.js';
+import {
+  createFlashcardState,
+  FLASHCARDS,
+  flipFlashcard,
+  getFlashcard,
+  resolveFlashcard
+} from './flashcards.js';
+import {
+  checkCircleExercise,
+  CIRCLE_EXERCISE,
+  hasAllCircleInputsFilled
+} from './circleExercise.js';
 import { mountLiterDm3Scene } from './literDm3Scene.js';
 import { checkNumberPuzzle, NUMBER_PUZZLE } from './numberPuzzle.js';
+import { checkPaintExercise, PAINT_EXERCISE } from './paintExercise.js';
 import {
   checkAnswer,
   createEndlessPracticeState,
@@ -11,6 +25,7 @@ import {
   createPracticeState,
   formatNumber,
   isPracticeFinalShortcut,
+  isSlideDevModeShortcut,
   makeEndlessQuestion,
   makeQuestionSet,
   resolveEndlessPracticeAnswer,
@@ -34,6 +49,7 @@ import selfPracticeImage from '../startzelfoefenen.jpg';
 import togetherAnswersImage from '../uitwerkingsamenoef.jpg';
 import exampleImage from '../voorbeeldvraag.jpg';
 import exampleTwoImage from '../voorbeeldvraag2.jpg';
+import paintQuestionImage from '../paint-question.svg';
 
 const app = document.querySelector('#app');
 const canvas = document.querySelector('#space-canvas');
@@ -75,6 +91,17 @@ let activeSlideScene = null;
 let puzzleValues = Array(NUMBER_PUZZLE.rows * NUMBER_PUZZLE.cols).fill('');
 let puzzleSolved = false;
 let puzzleScratchpad = '';
+let circleValues = Object.fromEntries(Object.keys(CIRCLE_EXERCISE.answers).map((key) => [key, '']));
+let circleCheckResult = null;
+let circleSolved = false;
+let circleScratchpad = '';
+let calculatorExpression = '';
+let calculatorDisplay = '0';
+let paintAnswer = '';
+let paintScratchpad = '';
+let paintResult = null;
+let flashcardState = createFlashcardState();
+let devMode = false;
 
 function render() {
   cleanupSlideScene();
@@ -171,6 +198,18 @@ function renderSlide() {
     renderNumberPuzzleSlide(slide);
     return;
   }
+  if (slide.variant === 'circle-table') {
+    renderCircleTableSlide(slide);
+    return;
+  }
+  if (slide.variant === 'paint-question') {
+    renderPaintQuestionSlide(slide);
+    return;
+  }
+  if (slide.variant === 'flashcards') {
+    renderFlashcardSlide(slide);
+    return;
+  }
 
   renderShell(`
     <section class="${slide.variant === 'prefixes' ? 'prefix-slide' : 'lesson-grid'} screen-panel">
@@ -195,9 +234,204 @@ function renderSlide() {
 
 function renderBlankNextSeriesSlide() {
   renderShell(`
-    <section class="screen-panel blank-slide" aria-label="Lege dia 19"></section>
+    <section class="screen-panel blank-slide" aria-label="Lege dia"></section>
     ${renderSlideControls()}
   `);
+}
+
+function renderCircleTableSlide(slide) {
+  const canCheck = hasAllCircleInputsFilled(circleValues);
+  const statusText = getCircleStatusText(canCheck);
+
+  renderShell(`
+    <section class="screen-panel circle-exercise-slide">
+      <div class="circle-exercise-main">
+        <div class="circle-question">
+          <p class="kicker">${slide.kicker}</p>
+          <h2>${slide.title}</h2>
+          <p class="circle-rounding-note">${slide.body}</p>
+          <p class="circle-instruction">Vul de ontbrekende gegevens van de cirkels A, B en C in de tabel in.</p>
+          ${renderCircleTable()}
+          <div class="circle-check-row">
+            <button class="primary-button" type="button" data-action="check-circle-table" ${canCheck ? '' : 'disabled'}>
+              Nakijken
+            </button>
+            <p class="circle-status ${circleSolved ? 'is-correct' : ''}" data-circle-status>${statusText}</p>
+          </div>
+        </div>
+        ${renderCalculator()}
+      </div>
+      <label class="scratchpad-label" for="circle-scratchpad">Kladblaadje</label>
+      <textarea id="circle-scratchpad" class="scratchpad circle-scratchpad" spellcheck="false" aria-label="Kladblaadje voor berekeningen">${circleScratchpad}</textarea>
+    </section>
+    ${renderSlideControls()}
+  `);
+}
+
+function renderCircleTable() {
+  return `
+    <table class="circle-table">
+      <thead>
+        <tr>
+          <th></th>
+          ${CIRCLE_EXERCISE.columns.map((column) => `<th>cirkel ${column}</th>`).join('')}
+        </tr>
+      </thead>
+      <tbody>
+        ${CIRCLE_EXERCISE.rows
+          .map(
+            (row) => `
+              <tr>
+                <th scope="row">${row.label === 'oppervlakte in cm2' ? 'oppervlakte in cm<sup>2</sup>' : row.label}</th>
+                ${CIRCLE_EXERCISE.columns.map((column) => renderCircleCell(`${row.key}-${column}`)).join('')}
+              </tr>
+            `
+          )
+          .join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+function renderCircleCell(key) {
+  const given = CIRCLE_EXERCISE.given[key];
+  if (given) return `<td class="circle-given">${given}</td>`;
+
+  const result = circleCheckResult?.fields?.[key];
+  const className = result ? `is-${result.status}` : '';
+  const label = key.replace('-', ' cirkel ');
+
+  return `
+    <td>
+      <input
+        class="${className}"
+        data-circle-key="${key}"
+        value="${circleValues[key] ?? ''}"
+        inputmode="decimal"
+        autocomplete="off"
+        aria-label="${label}"
+      />
+    </td>
+  `;
+}
+
+function renderCalculator() {
+  const keys = ['clear', 'back', 'pi', '/', '7', '8', '9', '*', '4', '5', '6', '-', '1', '2', '3', '+', '0', ',', '='];
+
+  return `
+    <aside class="calculator" aria-label="Rekenmachine">
+      <div class="calculator-display" data-calculator-display>${calculatorDisplay}</div>
+      <div class="calculator-grid">
+        ${keys
+          .map(
+            (key) => `<button type="button" data-calc="${key}" class="${key === '=' ? 'is-equals' : ''}">${getCalculatorButtonLabel(key)}</button>`
+          )
+          .join('')}
+      </div>
+    </aside>
+  `;
+}
+
+function getCalculatorButtonLabel(key) {
+  if (key === 'clear') return 'C';
+  if (key === 'back') return 'Back';
+  if (key === 'pi') return 'π';
+  return formatCalculatorDisplay(key);
+}
+
+function getCircleStatusText(canCheck) {
+  if (circleSolved) return 'Alles is goed. Je mag door naar de volgende dia.';
+  if (!canCheck) return 'Vul eerst alle open vakjes in.';
+  if (!circleCheckResult) return 'Alle vakjes zijn ingevuld. Je kunt nakijken.';
+
+  const roundingCount = Object.values(circleCheckResult.fields).filter((field) => field.status === 'rounding').length;
+  if (roundingCount > 0) {
+    return 'Een of meer antwoorden zijn goed berekend, maar niet afgerond op 1 decimaal.';
+  }
+  return 'Verbeter de rode vakjes en probeer opnieuw.';
+}
+
+function renderPaintQuestionSlide(slide) {
+  const feedbackClass = paintResult ? `is-${paintResult.status}` : '';
+  const answerClass = paintResult?.status === 'correct' ? 'is-correct' : paintResult?.status === 'wrong' ? 'is-wrong' : '';
+
+  renderShell(`
+    <section class="screen-panel paint-question-slide">
+      <div class="paint-question-copy">
+        <p class="kicker">${slide.kicker}</p>
+        <h2>${slide.title}</h2>
+        <p>${slide.body}</p>
+        <article class="paint-problem">
+          <p>${PAINT_EXERCISE.question}</p>
+        </article>
+        <label class="scratchpad-label" for="paint-scratchpad">Kladblaadje met berekening</label>
+        <textarea id="paint-scratchpad" class="scratchpad paint-scratchpad" data-paint-scratchpad spellcheck="false" aria-label="Kladblaadje voor berekening">${paintScratchpad}</textarea>
+        <label class="paint-answer-label" for="paint-answer">Antwoord</label>
+        <input id="paint-answer" class="paint-answer ${answerClass}" data-paint-answer value="${paintAnswer}" autocomplete="off" />
+        <div class="paint-check-row">
+          <button class="primary-button" type="button" data-action="check-paint-question">Nakijken</button>
+          <p class="paint-feedback ${feedbackClass}" data-paint-feedback>${paintResult?.message ?? 'Maak eerst je berekening op het kladblaadje.'}</p>
+        </div>
+      </div>
+      <figure class="paint-illustration">
+        <img src="${paintQuestionImage}" alt="Illustratie van een verfblik met diameter 12 cm en hoogte 20 cm" />
+      </figure>
+    </section>
+    ${renderSlideControls()}
+  `);
+}
+
+function renderFlashcardSlide(slide) {
+  const card = getFlashcard(flashcardState);
+  const current = Math.min(flashcardState.index + 1, FLASHCARDS.length);
+  const percent = flashcardState.completed ? 100 : (flashcardState.index / FLASHCARDS.length) * 100;
+
+  renderShell(`
+    <section class="screen-panel flashcard-slide">
+      <div class="flashcard-intro">
+        <p class="kicker">${slide.kicker}</p>
+        <h2>${slide.title}</h2>
+        <p>${slide.body}</p>
+      </div>
+      <div class="flashcard-game">
+        <div class="flashcard-scorebar" aria-label="Flashcard voortgang">
+          <span>Kaart ${current} van ${FLASHCARDS.length}</span>
+          <div class="progress"><span style="width: ${percent}%"></span></div>
+          <span>Wist ik: ${flashcardState.known}</span>
+          <span>Oefenen: ${flashcardState.practice}</span>
+        </div>
+        ${
+          flashcardState.completed
+            ? renderFlashcardComplete()
+            : `
+              <button class="flashcard ${flashcardState.flipped ? 'is-flipped' : ''}" type="button" data-action="flip-flashcard" aria-label="Draai flashcard om">
+                <span class="flashcard-label">${flashcardState.flipped ? 'Antwoord' : 'Vraag'}</span>
+                <strong>${flashcardState.flipped ? card.back : card.front}</strong>
+              </button>
+              <div class="flashcard-actions">
+                <button class="icon-button" type="button" data-action="flip-flashcard">${flashcardState.flipped ? 'Terug naar vraag' : 'Draai om'}</button>
+                <button class="icon-button" type="button" data-action="flashcard-practice" ${flashcardState.flipped ? '' : 'disabled'}>Nog oefenen</button>
+                <button class="primary-button" type="button" data-action="flashcard-known" ${flashcardState.flipped ? '' : 'disabled'}>Wist ik</button>
+              </div>
+            `
+        }
+      </div>
+    </section>
+    ${renderSlideControls()}
+  `);
+
+  gsap.fromTo('.flashcard', { rotateY: flashcardState.flipped ? -8 : 8, autoAlpha: 0.82 }, { rotateY: 0, autoAlpha: 1, duration: 0.34, ease: 'power2.out' });
+}
+
+function renderFlashcardComplete() {
+  return `
+    <section class="flashcard-complete">
+      <p class="kicker">Klaar</p>
+      <h3>Flashcards afgerond</h3>
+      <p>Wist ik: ${flashcardState.known}. Nog oefenen: ${flashcardState.practice}.</p>
+      <button class="primary-button wide" type="button" data-action="reset-flashcards">Opnieuw oefenen</button>
+    </section>
+  `;
 }
 
 function renderNumberPuzzleSlide(slide) {
@@ -326,18 +560,25 @@ function renderSlideControls() {
   const isFirstSlide = slideIndex === 0;
   const isFirstLessonEnd = slideIndex === FIRST_LESSON_SLIDE_COUNT - 1;
   const isLastSlide = slideIndex === slides.length - 1;
-  const isLockedPuzzle = slides[slideIndex]?.variant === 'number-puzzle' && !puzzleSolved;
+  const isLockedExercise = isCurrentSlideProgressLocked();
 
   return `
     <nav class="controls" aria-label="Presentatieknoppen">
       <button class="icon-button" type="button" data-action="prev" ${isFirstSlide ? 'disabled' : ''} title="Terug">
         <span aria-hidden="true">←</span><span>Terug</span>
       </button>
-      <button class="primary-button" type="button" data-action="${isFirstLessonEnd ? 'rules' : 'next'}" ${isLastSlide || isLockedPuzzle ? 'disabled' : ''}>
+      <button class="primary-button" type="button" data-action="${isFirstLessonEnd ? 'rules' : 'next'}" ${isLastSlide || (isLockedExercise && !devMode) ? 'disabled' : ''}>
         <span>${isFirstLessonEnd ? 'Exit ticket' : 'Verder'}</span><span aria-hidden="true">→</span>
       </button>
     </nav>
   `;
+}
+
+function isCurrentSlideProgressLocked() {
+  const variant = slides[slideIndex]?.variant;
+  if (variant === 'number-puzzle') return !puzzleSolved;
+  if (variant === 'circle-table') return !circleSolved;
+  return false;
 }
 
 function cleanupSlideScene() {
@@ -582,7 +823,7 @@ function getStageLabel() {
 
 function renderStageNavigation() {
   if (view !== 'slides') {
-    return `<div class="stage-pill">${getStageLabel()}</div>`;
+    return `<div class="stage-nav"><div class="stage-pill">${getStageLabel()}</div>${renderDevModeIndicator()}</div>`;
   }
 
   const inNextSeries = slideIndex >= NEXT_SERIES_START_INDEX;
@@ -597,8 +838,13 @@ function renderStageNavigation() {
       <button class="stage-pill stage-pill-green ${inNextSeries ? 'is-active' : ''}" type="button" data-action="jump-next-series" aria-label="Ga naar dia 19">
         ${greenLabel}
       </button>
+      ${renderDevModeIndicator()}
     </div>
   `;
+}
+
+function renderDevModeIndicator() {
+  return devMode ? '<div class="stage-pill stage-pill-dev">DEV</div>' : '';
 }
 
 function getSlideProgressPercent() {
@@ -698,6 +944,12 @@ app.addEventListener('click', (event) => {
   if (!button || locked) return;
 
   const action = button.dataset.action;
+  const calculatorKey = button.dataset.calc;
+  if (calculatorKey) {
+    handleCalculatorButton(calculatorKey);
+    return;
+  }
+
   if (!action) return;
 
   if (action === 'home') {
@@ -718,6 +970,12 @@ app.addEventListener('click', (event) => {
   if (action === 'jump-first-series') slideIndex = 0;
   if (action === 'jump-next-series') slideIndex = NEXT_SERIES_START_INDEX;
   if (action === 'check-puzzle') checkPuzzle();
+  if (action === 'check-circle-table') checkCircleTable();
+  if (action === 'check-paint-question') checkPaintQuestion();
+  if (action === 'flip-flashcard') flipCurrentFlashcard();
+  if (action === 'flashcard-known') answerFlashcard(true);
+  if (action === 'flashcard-practice') answerFlashcard(false);
+  if (action === 'reset-flashcards') resetFlashcards();
   if (action === 'rules') view = 'rules';
   if (action === 'start-practice') restartPractice();
   if (action === 'restart-practice') restartPractice();
@@ -739,6 +997,36 @@ app.addEventListener('submit', (event) => {
 });
 
 app.addEventListener('input', (event) => {
+  if (event.target.matches('[data-paint-scratchpad]')) {
+    paintScratchpad = event.target.value;
+    paintResult = null;
+    updatePaintFeedback('Maak eerst je berekening op het kladblaadje.');
+    return;
+  }
+
+  if (event.target.matches('[data-paint-answer]')) {
+    paintAnswer = event.target.value;
+    paintResult = null;
+    event.target.classList.remove('is-correct', 'is-wrong');
+    updatePaintFeedback('Maak eerst je berekening op het kladblaadje.');
+    return;
+  }
+
+  if (event.target.matches('.circle-scratchpad')) {
+    circleScratchpad = event.target.value;
+    return;
+  }
+
+  const circleInput = event.target.closest('[data-circle-key]');
+  if (circleInput && !locked) {
+    const key = circleInput.dataset.circleKey;
+    circleValues[key] = circleInput.value;
+    circleCheckResult = null;
+    circleSolved = false;
+    updateCircleCheckButton();
+    return;
+  }
+
   if (event.target.matches('.scratchpad')) {
     puzzleScratchpad = event.target.value;
     return;
@@ -778,9 +1066,77 @@ function checkPuzzle() {
   }
 }
 
+function checkCircleTable() {
+  if (!hasAllCircleInputsFilled(circleValues)) return;
+
+  circleCheckResult = checkCircleExercise(circleValues);
+  circleSolved = circleCheckResult.allCorrect;
+  render();
+}
+
+function checkPaintQuestion() {
+  paintResult = checkPaintExercise({
+    answer: paintAnswer,
+    scratchpad: paintScratchpad
+  });
+  render();
+}
+
+function flipCurrentFlashcard() {
+  flashcardState = flipFlashcard(flashcardState);
+  render();
+}
+
+function answerFlashcard(remembered) {
+  if (!flashcardState.flipped) return;
+  flashcardState = resolveFlashcard(flashcardState, remembered);
+  render();
+}
+
+function resetFlashcards() {
+  flashcardState = createFlashcardState();
+  render();
+}
+
+function updatePaintFeedback(message) {
+  const feedback = document.querySelector('[data-paint-feedback]');
+  if (feedback) {
+    feedback.textContent = message;
+    feedback.className = 'paint-feedback';
+  }
+}
+
+function updateCircleCheckButton() {
+  const button = document.querySelector('[data-action="check-circle-table"]');
+  const status = document.querySelector('[data-circle-status]');
+  const canCheck = hasAllCircleInputsFilled(circleValues);
+
+  if (button) button.disabled = !canCheck;
+  if (status) status.textContent = canCheck ? 'Alle vakjes zijn ingevuld. Je kunt nakijken.' : 'Vul eerst alle open vakjes in.';
+}
+
+function handleCalculatorButton(key) {
+  const nextState = calculateNextState(
+    { expression: calculatorExpression, display: calculatorDisplay },
+    key
+  );
+  calculatorExpression = nextState.expression;
+  calculatorDisplay = nextState.display;
+
+  const display = document.querySelector('[data-calculator-display]');
+  if (display) display.textContent = calculatorDisplay;
+}
+
 window.addEventListener(
   'keydown',
   (event) => {
+    if (isSlideDevModeShortcut(event, view)) {
+      event.preventDefault();
+      devMode = !devMode;
+      render();
+      return;
+    }
+
     if (locked) {
       if (event.shiftKey && event.code === 'Space') {
         event.preventDefault();
@@ -805,6 +1161,7 @@ window.addEventListener(
       render();
     }
     if (event.key === 'ArrowRight') {
+      if (isCurrentSlideProgressLocked() && !devMode) return;
       if (slideIndex === FIRST_LESSON_SLIDE_COUNT - 1) view = 'rules';
       else slideIndex = Math.min(slides.length - 1, slideIndex + 1);
       render();
